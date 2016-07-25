@@ -29,6 +29,7 @@
     "react-native": "^0.29.0"
   },
   "dependencies": {
-    "node-uuid": "^1.4.7"
+    "node-uuid": "^1.4.7",
+    "victor": "^1.1.0"
   }
 }
