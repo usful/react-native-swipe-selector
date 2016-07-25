@@ -1,0 +1,34 @@
+{
+  "name": "react-native-swipe-selector",
+  "version": "0.0.1",
+  "description": "A react component that allows swiping to select an option from a carousel, while showing other items next to it",
+  "main": "SwipeSelector.js",
+  "scripts": {
+    "test": "echo \"\\\\TODO: Not Yet Implemented\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usful/react-native-swipe-selector.git"
+  },
+  "keywords": [
+    "react-native",
+    "react-native-component",
+    "selector",
+    "picker",
+    "component",
+    "ios",
+    "android"
+  ],
+  "author": "usful",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/usful/react-native-swipe-selector/issues"
+  },
+  "homepage": "https://github.com/usful/react-native-swipe-selector#readme",
+  "peerDependencies": {
+    "react-native": "^0.29.0"
+  },
+  "dependencies": {
+    "node-uuid": "^1.4.7"
+  }
+}
