@@ -26,10 +26,13 @@
   },
   "homepage": "https://github.com/usful/react-native-swipe-selector#readme",
   "peerDependencies": {
-    "react-native": "^0.29.0"
+    "react-native": ">0.29.0"
   },
   "dependencies": {
     "node-uuid": "^1.4.7",
     "victor": "^1.1.0"
+  },
+  "devDependencies": {
+    "jest-cli": "^13.2.3"
   }
 }
