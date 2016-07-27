@@ -114,3 +114,5 @@ function scaleWindow (inputRange, outputRange, valuedInputs, valueLabel = 'x') {
 
   return { [valueLabel]: {inputRange: inputRange, outputRange: outputRange} }
 }
+
+export {scaleLinear, scaleLogarithmic, scaleSqrt, scaleWindow}

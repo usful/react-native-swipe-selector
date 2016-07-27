@@ -35,6 +35,9 @@ function* range (start, end, step = 1) {
 function* circularize (array, currentIndex = 0, bounded = false) {
   
   let distance = 0;
+  if (!array)
+    return;
+
   while (!bounded || (bounded && distance < array.length)) {
     if (currentIndex >= array.length)
       currentIndex = currentIndex % array.length;
@@ -43,3 +46,5 @@ function* circularize (array, currentIndex = 0, bounded = false) {
     distance++;
   }
 }
+
+export {bound, range, circularize}
