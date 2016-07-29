@@ -18,8 +18,8 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
     rightArm.push(rightVanishingIndex);
     nextIndex = rightMaxIndex + 1;
 
-    hiddenArm = Array.from(range(nextIndex, nextIndex + hiddenCount + 1));
-    nextIndex = nextIndex + hiddenCount + 1;
+    hiddenArm = Array.from(range(nextIndex, nextIndex + hiddenCount));
+    nextIndex = nextIndex + hiddenCount;
 
     let leftMaxIndex = (nextIndex-1) + bounds.left.padPoints + leftCount;
     leftArm = Array.from(range(nextIndex, leftMaxIndex + 1));
@@ -65,7 +65,7 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
     bounds.hidden.interpolateDepth
   );
 
-  for (let loc of rightArm) {
+  for (let loc of hiddenArm) {
     inputRange.push(loc);
     outputRange[valueLabel].push(hiddenSample(loc));
   }
@@ -102,8 +102,8 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
     rightArm.push(rightVanishingIndex);
     nextIndex = rightMaxIndex + 1;
 
-    let hiddenArm = Array.from(range(nextIndex, nextIndex + hiddenCount + 1));
-    nextIndex = nextIndex + hiddenCount + 1;
+    let hiddenArm = Array.from(range(nextIndex, nextIndex + hiddenCount));
+    nextIndex = nextIndex + hiddenCount;
 
     let leftMaxIndex = rightMaxIndex + leftCount;
     let leftArm = Array.from(range(nextIndex, leftMaxIndex + 1));
@@ -124,19 +124,20 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
   };
   removePadding(outputRange[valueLabel]);
 
-
+  console.log(valueLabel);
   return {
     inputRange: inputRange,
     [valueLabel]: {inputRange: inputRange, outputRange: outputRange[valueLabel]}
   };
 }
 
-function calculate2DInterpolationMap(items, bounds) {
+function calculate2DInterpolationMap(bounds, rightCount, leftCount, hiddenCount) {
 
-  let xInterpolation = calculateInterpolationMap(items, bounds, 'x');
+  let xInterpolation = calculateInterpolationMap(...arguments, 'x');
 
-  let yInterpolation = calculateInterpolationMap(items, bounds, 'y');
-
+  let yInterpolation = calculateInterpolationMap(...arguments, 'y');
+  console.log('xint', xInterpolation);
+  console.log('yint', yInterpolation);
   return {
     inputRange: xInterpolation.inputRange,
     x: {inputRange: xInterpolation.inputRange, outputRange: xInterpolation.x.outputRange},
