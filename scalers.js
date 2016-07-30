@@ -96,23 +96,4 @@ function scaleSqrt(inputRange, outputRange, depth = 1 ) {
   return f;
 }
 
-function scaleWindow (inputRange, outputRange, valuedInputs, valueLabel = 'x') {
-  // Changes to default for everything that is not in the closed interval of valuedInputs
-  // ValuedInputs = { default: Number, range: [{start: Number , end: Number }]}
-
-  outputRange = outputRange.map( (val, index)  => {
-    let windowed = false; // By default assume not in the allowed window
-
-    for (let range of valuedInputs.range)
-      if (range.start <= inputRange[index] && inputRange[index] <= range.end)
-        windowed = true;
-
-    if (windowed)
-      return val;
-    return valuedInputs.default;
-  });
-
-  return { [valueLabel]: {inputRange: inputRange, outputRange: outputRange} }
-}
-
-export {scaleLinear, scaleLogarithmic, scaleSqrt, scaleWindow}
+export {scaleLinear, scaleLogarithmic, scaleSqrt}

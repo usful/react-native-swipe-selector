@@ -124,7 +124,6 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
   };
   removePadding(outputRange[valueLabel]);
 
-  console.log(valueLabel);
   return {
     inputRange: inputRange,
     [valueLabel]: {inputRange: inputRange, outputRange: outputRange[valueLabel]}
@@ -136,8 +135,6 @@ function calculate2DInterpolationMap(bounds, rightCount, leftCount, hiddenCount)
   let xInterpolation = calculateInterpolationMap(...arguments, 'x');
 
   let yInterpolation = calculateInterpolationMap(...arguments, 'y');
-  console.log('xint', xInterpolation);
-  console.log('yint', yInterpolation);
   return {
     inputRange: xInterpolation.inputRange,
     x: {inputRange: xInterpolation.inputRange, outputRange: xInterpolation.x.outputRange},
@@ -145,4 +142,23 @@ function calculate2DInterpolationMap(bounds, rightCount, leftCount, hiddenCount)
   };
 }
 
-export {calculateInterpolationMap, calculate2DInterpolationMap}
+function interpolationWindow (inputRange, outputRange, valuedInputs, valueLabel = 'x') {
+  // Changes to default for everything that is not in the closed interval of valuedInputs
+  // ValuedInputs = { default: Number, range: [{start: Number , end: Number }]}
+
+  outputRange = outputRange.map( (val, index)  => {
+    let windowed = false; // By default assume not in the allowed window
+
+    for (let range of valuedInputs.range)
+      if (range.start <= inputRange[index] && inputRange[index] <= range.end)
+        windowed = true;
+
+    if (windowed)
+      return val;
+    return valuedInputs.default;
+  });
+
+  return { [valueLabel]: {inputRange: inputRange, outputRange: outputRange} }
+}
+
+export {calculateInterpolationMap, calculate2DInterpolationMap, interpolationWindow}
