@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const _encaseViews = function (state, items, descriptors, attachInterpolation = true) {
+const _encaseViews = function (state, items, descriptors) {
 
   if (!Array.isArray(items)) items = [items];
 
@@ -212,8 +212,8 @@ const _encaseViews = function (state, items, descriptors, attachInterpolation = 
 
   let encasedItems = items.map( (component, index) => {
     let location = new Animated.ValueXY({x: 0, y:0}); // default to center at {x:0, y:0}
-    let scale = new Animated.ValueXY({x: 1, y:1}); // default to {x: 1, y: 1}
-    let opacity = new Animated.Value(1); // default to full opacity
+    let scale = new Animated.ValueXY({x: 0, y:0}); // default to {x: 1, y: 1}
+    let opacity = new Animated.Value(0); // default to full opacity
 
     let transX = {};
     let transY = {};
@@ -268,38 +268,38 @@ const _encaseViews = function (state, items, descriptors, attachInterpolation = 
           }
         ]}
       >
-      <Animated.View
-        style={[
-          {
-            opacity: descOpa,
-            transform: [
-              {translateY: Animated.add(_adjustComponentPosition.y, state.descriptorDistance)}
-            ]
+        <Animated.View
+          style={[
+            {
+              opacity: descOpa,
+              transform: [
+                {translateY: Animated.add(_adjustComponentPosition.y, state.descriptorDistance)}
+              ]
+            }
+          ]}
+        >
+          { descriptor ? <Text style={{textAlign:'center'}}>{descriptor}</Text> : null}
+        </Animated.View>
+        <Animated.View
+          onLayout={(e) => {
+            // center the components
+            let layout = e.nativeEvent.layout;
+            _adjustComponentPosition.setValue({x:0, y:(-layout.height/2-layout.y)})
           }
-        ]}
-      >
-        { descriptor ? <Text style={{textAlign:'center'}}>{descriptor}</Text> : null}
-      </Animated.View>
-      <Animated.View
-        onLayout={(e) => {
-          // center the components
-          let layout = e.nativeEvent.layout;
-          _adjustComponentPosition.setValue({x:0, y:(-layout.height/2-layout.y)})
-        }
-        }
-        style={[
-          {
-            opacity: opa,
-            alignItems: 'center', // centers along the x axis
-            transform : [
-              {translateY: _adjustComponentPosition.y}
-            ]
           }
-        ]}
-      >
-        { component }
-      </Animated.View>
-    </Animated.View>;
+          style={[
+            {
+              opacity: opa,
+              alignItems: 'center', // centers along the x axis
+              transform : [
+                {translateY: _adjustComponentPosition.y}
+              ]
+            }
+          ]}
+        >
+          { component }
+        </Animated.View>
+      </Animated.View>;
 
     let obj = {
       component: component,
