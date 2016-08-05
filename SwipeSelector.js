@@ -206,117 +206,110 @@ const _encaseViews = function (state, items, descriptors, attachInterpolation = 
                                         { start: state.children.length - 1, end: state.children.length }
                                       ]
                                     },
+                                    'opacity'
                                   );
 
 
-  // debugger;
   let encasedItems = items.map( (component, index) => {
-    // let location = new Animated.ValueXY({x: 0, y:0}); // default to center at {x:0, y:0}
-    // let scale = new Animated.ValueXY({x: 1, y:1}); // default to {x: 1, y: 1}
-    // let opacity = new Animated.Value(1); // default to full opacity
-    // let transX = {};
-    // let transY = {};
-    // let scaleX = {};
-    // let scaleY = {};
-    // let opa = {};
-    // let descOpa = {};
-    //
-    // if (attachInterpolation) {
-    //   transX = location.x.interpolate({
-    //     inputRange: interpolationLocationMap.inputRange,
-    //     outputRange: interpolationLocationMap.x.outputRange
-    //   });
-    //   transY = location.y.interpolate({
-    //     inputRange: interpolationLocationMap.inputRange,
-    //     outputRange: interpolationLocationMap.y.outputRange
-    //   });
-    //   scaleX = scale.x.interpolate({
-    //     inputRange: interpolationScaleMap.inputRange,
-    //     outputRange: interpolationScaleMap.x.outputRange
-    //   });
-    //   scaleY = scale.y.interpolate({
-    //     inputRange: interpolationScaleMap.inputRange,
-    //     outputRange: interpolationScaleMap.x.outputRange
-    //   });
-    //   opa = opacity.interpolate({
-    //     inputRange: interpolationOpacityMap.inputRange,
-    //     outputRange: interpolationOpacityMap.x.outputRange
-    //   });
-    //   descOpa = opacity.interpolate({
-    //     inputRange: interpolationDescriptorOpacityMap.inputRange,
-    //     outputRange: interpolationDescriptorOpacityMap.x.outputRange
-    //   });
-    // }
-    //
-    // else {
-    //   transX = location.x;
-    //   transY = location.y;
-    //   scaleX = scale.x;
-    //   scaleY = scale.y;
-    //   opa = opacity;
-    //   descOpa = opacity;
-    // }
+    let location = new Animated.ValueXY({x: 0, y:0}); // default to center at {x:0, y:0}
+    let scale = new Animated.ValueXY({x: 1, y:1}); // default to {x: 1, y: 1}
+    let opacity = new Animated.Value(1); // default to full opacity
+
+    let transX = {};
+    let transY = {};
+
+    let scaleX = {};
+    let scaleY = {};
+
+    let opa = {};
+    let descOpa = {};
 
     // These values are used to center the images and descriptors
-    // let _adjustComponentPosition = new Animated.ValueXY({x :0, y:0});
+    let _adjustComponentPosition = new Animated.ValueXY({x :0, y:0});
+
+    transX = location.x.interpolate({
+      inputRange: interpolationLocationMap.inputRange,
+      outputRange: interpolationLocationMap.x.outputRange
+    });
+    transY = location.y.interpolate({
+      inputRange: interpolationLocationMap.inputRange,
+      outputRange: interpolationLocationMap.y.outputRange
+    });
+    scaleX = scale.x.interpolate({
+      inputRange: interpolationScaleMap.inputRange,
+      outputRange: interpolationScaleMap.x.outputRange
+    });
+    scaleY = scale.y.interpolate({
+      inputRange: interpolationScaleMap.inputRange,
+      outputRange: interpolationScaleMap.x.outputRange
+    });
+    opa = opacity.interpolate({
+      inputRange: interpolationOpacityMap.inputRange,
+      outputRange: interpolationOpacityMap.opacity.outputRange
+    });
+    descOpa = opacity.interpolate({
+      inputRange: interpolationDescriptorOpacityMap.inputRange,
+      outputRange: interpolationDescriptorOpacityMap.opacity.outputRange
+    });
 
     let key = uuid.v4();
     let descriptor = ( descriptors && descriptors.length > index ? descriptors[index] : null );
-    // let viewComponent = <Animated.View
-    //   key={key}
-    //   style={[ styles.itemViewStyle,
-    //     {
-    //       transform : [
-    //         {translateX: transX},
-    //         {translateY: transY},
-    //         {scaleX: scaleX},
-    //         {scaleY: scaleY}
-    //       ]
-    //     }
-    //   ]}
-    // >
-    //   <Animated.View
-    //     style={[
-    //       {
-    //         opacity: descOpa,
-    //         transform: [
-    //           {translateY: Animated.add(_adjustComponentPosition.y, -this.state.descriptorDistance)}
-    //         ]
-    //       }
-    //     ]}
-    //   >
-    //     { descriptor ? <Text style={{textAlign:'center'}}>{descriptor}</Text> : null}
-    //   </Animated.View>
-    //   <Animated.View
-    //     onLayout={(e) => {
-    //       // center the images over
-    //       let layout = e.nativeEvent.layout;
-    //       _adjustComponentPosition.setValue({x:0, y:(-layout.height/2-layout.y)})
-    //     }
-    //     }
-    //     style={[
-    //       {
-    //         opacity: opa,
-    //         alignItems: 'center', // centers along the x axis
-    //         transform : [
-    //           {translateY: _adjustComponentPosition.y}
-    //         ]
-    //       }
-    //     ]}
-    //   >
-    //     { component }
-      {/*</Animated.View>*/}
-    {/*</Animated.View>;*/}
+    let viewComponent =
+      <Animated.View
+        key={key}
+        style={[ styles.itemViewStyle,
+          {
+            transform : [
+              {translateX: transX},
+              {translateY: transY},
+              {scaleX: scaleX},
+              {scaleY: scaleY}
+            ]
+          }
+        ]}
+      >
+      <Animated.View
+        style={[
+          {
+            opacity: descOpa,
+            transform: [
+              {translateY: Animated.add(_adjustComponentPosition.y, state.descriptorDistance)}
+            ]
+          }
+        ]}
+      >
+        { descriptor ? <Text style={{textAlign:'center'}}>{descriptor}</Text> : null}
+      </Animated.View>
+      <Animated.View
+        onLayout={(e) => {
+          // center the components
+          let layout = e.nativeEvent.layout;
+          _adjustComponentPosition.setValue({x:0, y:(-layout.height/2-layout.y)})
+        }
+        }
+        style={[
+          {
+            opacity: opa,
+            alignItems: 'center', // centers along the x axis
+            transform : [
+              {translateY: _adjustComponentPosition.y}
+            ]
+          }
+        ]}
+      >
+        { component }
+      </Animated.View>
+    </Animated.View>;
 
-    return {
+    let obj = {
       component: component,
       descriptor: descriptor,
-      viewComponent: component,
+      viewComponent: viewComponent,
       location: location,
       scale: scale,
       opacity: opacity,
       index: index,
-      _easing: this.state.easing,
+      _easing: state.easing,
       _adjustComponentPosition: _adjustComponentPosition,
       _shownIndex: 0, // Represents where the item appears to be
       get shownIndex () {
@@ -398,6 +391,7 @@ const _encaseViews = function (state, items, descriptors, attachInterpolation = 
         this.shownIndex = moveTo;
       }
     };
+    return obj;
   });
 
   return encasedItems;
@@ -488,7 +482,6 @@ class SwipeSelector extends React.Component {
 
   constructor (props) {
     super(props) ;
-    console.log(props);
     this.state = SwipeSelector.propsToState(props);
 
   }
@@ -523,11 +516,11 @@ class SwipeSelector extends React.Component {
       currentItem = firstItem.value;
     }
 
-    for (let i = 0; i< this._rightCount(items); i++) {
+    for (let i = 0; i< this.state.rightCount; i++) {
       rightItems.push(itemsList.next().value);
     }
 
-    for (let j = 0; j< this._leftCount(items); j++) {
+    for (let j = 0; j< this.state.leftCount; j++) {
       leftItems.push(itemsList.next().value);
     }
     
@@ -555,14 +548,11 @@ class SwipeSelector extends React.Component {
 
   render() {
     let items = this.state.children;
-    console.log(items);
 
     items = this._collateItems(items, this.state.shownIndex);
-    console.log('render', items);
 
     items = items.map(comp => comp.viewComponent);
 
-    let targetDots = items.map(() => <View style={styles.dot} />);
 //{ ...this.state.panResponder.panHandlers }
     return (
       <View
@@ -571,7 +561,6 @@ class SwipeSelector extends React.Component {
         style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100}}
       >
         {items}
-        {targetDots}
         <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {let self = this; debugger;} }><Text>DEBUG</Text></TouchableOpacity>
       </View>
 

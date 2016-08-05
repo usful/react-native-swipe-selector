@@ -158,7 +158,10 @@ function interpolationWindow (inputRange, outputRange, valuedInputs, valueLabel 
     return valuedInputs.default;
   });
 
-  return { [valueLabel]: {inputRange: inputRange, outputRange: outputRange} }
+  return {
+    inputRange: inputRange,
+    [valueLabel]: {inputRange: inputRange, outputRange: outputRange}
+  }
 }
 
 export {calculateInterpolationMap, calculate2DInterpolationMap, interpolationWindow}

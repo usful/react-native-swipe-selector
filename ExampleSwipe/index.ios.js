@@ -24,10 +24,13 @@ class ExampleSwipe extends Component {
 // {/*Press Cmd+R to reload,{'\n'}*/}
 // {/*Cmd+D or shake for dev menu*/}
 // {/*</Text>*/}
+
   render() {
     return (
       <View style={styles.container}>
-        <SwipeSelector/>
+        <SwipeSelector>
+          <Text>This is a string</Text>
+        </SwipeSelector>
 
       </View>
     );
