@@ -31,8 +31,8 @@ const _scrollDirections = {
  * @private
  */
 const _resolveScrollDirections = function(scrollDirection,
-                                          leftPoint= {x: -1, y:0},
-                                          rightPoint= {x: 1, y:0},
+                                          leftPoint = {x: -1, y:0},
+                                          rightPoint = {x: 1, y:0},
                                           customVector = {x: 1, y: 0} ) {
   switch(scrollDirection) {
     case _scrollDirections.HORIZONTAL:
