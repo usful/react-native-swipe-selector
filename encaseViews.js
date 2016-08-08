@@ -142,6 +142,7 @@ class EncasedView {
     this.viewComponent = viewComponent;
 
     this._index = index;
+    this._currentIndex = 0;
     this._shownIndex = 0;
     this._easing = easing;
   }
@@ -157,10 +158,10 @@ class EncasedView {
   }
 
   get currentIndex () {
-    return this._index;
+    return this._currentIndex;
   }
   set currentIndex (val) {
-    this._index = val;
+    this._currentIndex = val;
     return val;
   }
   get shownIndex () {
@@ -172,6 +173,9 @@ class EncasedView {
     this._scale.setValue({x: val, y: val});
     this._opacity.setValue(val);
     return val;
+  }
+  get index () {
+    return this._index;
   }
 
   transition (moveTo, duration = 1000) {

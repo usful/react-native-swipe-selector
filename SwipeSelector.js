@@ -116,7 +116,6 @@ const styles = StyleSheet.create({
 });
 
 class SwipeSelector extends React.Component {
-  //TODO: Adaptive unit vector
   //TODO: Tracking Scrolling
   //TODO: Flicking
   //TODO: Hidden Arm
@@ -148,7 +147,7 @@ class SwipeSelector extends React.Component {
   };
 
   // TODO: move to outside the class
-  static propsToState(props, currentIndex = 0, shownIndex = 0, attachResponders = false) {
+  static propsToState(props, currentIndex = 0) {
 
     let children = React.Children.toArray(props.children);
 
@@ -164,7 +163,6 @@ class SwipeSelector extends React.Component {
       leftPoint: props.leftPoint,
       rightPoint: props.rightPoint,
       currentIndex: currentIndex,
-      shownIndex: shownIndex,
       leftCount: Math.floor( ( shownCount -1 ) /2 ),
       rightCount: Math.ceil( ( shownCount -1 ) /2 ),
       hideCount: hideCount,
@@ -231,6 +229,7 @@ class SwipeSelector extends React.Component {
 
       onPanResponderStart: (e, gestureState) => {
         // TODO: set up all resources required
+        // TODO: this should set the current indexes, just in case
       },
 
       onPanResponderEnd: (e, gestureState) => {
@@ -253,7 +252,10 @@ class SwipeSelector extends React.Component {
           animations.push( item.transition( newIndex, 150 ) );
         }
 
-        Animated.parallel(animations).start( () => {
+        Animated.parallel(animations).start( ({finished: done}) => {
+
+          if (!done) return;
+
           // Set the currentIndexes
           for (let item of this.state.children) {
             let newIndex;
@@ -284,18 +286,13 @@ class SwipeSelector extends React.Component {
           // This double modulo is to deal with negative direction amounts
           newIndex = ( (offset % length) + length) % length ;
 
-          if (!updateRequired && Math.round(newIndex) !== Math.round(item.shownIndex))
-            updateRequired = true;
 
-          if ( (newIndex + 0.5) % (this.state.children.length) < 1 && this.state.shownIndex !== item.index)
-            this.state.shownIndex = item.index;
+          if ( Math.round(newIndex) < 1 && this.state.currentIndex !== item.index)
+            this.setState({currentIndex: item.index});
 
           item.transitionTemp( newIndex );
 
         }
-
-        if (updateRequired)
-          this.forceUpdate();
 
       },
 
@@ -316,7 +313,7 @@ class SwipeSelector extends React.Component {
   }
 
   componentDidMount() {
-
+    this.expandItems();
   }
 
   componentWillReceiveProps() {
@@ -324,7 +321,19 @@ class SwipeSelector extends React.Component {
   }
 
   shouldComponentUpdate() {
-    
+    return true;
+  }
+
+  expandItems() {
+    // If we're not in a contracted state, then don't do anything
+    if (this.state.children.some( child => child.index !== 0 && child.index !== this.state.children.length)) return;
+
+    let animations = [];
+    let children = this.circularize(this.state.children, this.state.currentIn);
+    for (let child in children) {
+
+    }
+
   }
 
   _collateItems(items, currentIndex = 0) {
@@ -372,9 +381,10 @@ class SwipeSelector extends React.Component {
   }
 
   render() {
+    console.log(this.state.currentIndex);
     let items = this.state.children;
 
-    items = this._collateItems(items, this.state.shownIndex);
+    items = this._collateItems(items, this.state.currentIndex);
 
     items = items.map(comp => comp.viewComponent);
 
