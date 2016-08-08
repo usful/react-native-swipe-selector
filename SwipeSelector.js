@@ -5,6 +5,8 @@ import { StyleSheet, Text, View, Animated, Easing, PanResponder, TouchableOpacit
 import { bound, range, circularize } from './helpers';
 import { scaleLinear, scaleLogarithmic, scaleSqrt } from './scalers'
 import encaseViews from './encaseViews';
+
+// CAUTION: Vector functions mutate
 import Vector from 'victor';
 
 /**
@@ -34,18 +36,18 @@ const _resolveScrollDirections = function(scrollDirection,
                                           customVector = {x: 1, y: 0} ) {
   switch(scrollDirection) {
     case _scrollDirections.HORIZONTAL:
-      return Vector({x: 1, y: 0});
+      return Vector.fromObject({x: 1, y: 0});
     case _scrollDirections.VERTICAL:
-      return Vector({x: 0, y: -1});
+      return Vector.fromObject({x: 0, y: -1});
     case _scrollDirections.ADAPTIVE:
-      let left = Vector(fixPoints.leftPoint).norm();
-      let right = Vector(fixPoints.rightPoint).norm();
+      let left = Vector.fromObject(fixPoints.leftPoint).norm();
+      let right = Vector.fromObject(fixPoints.rightPoint).norm();
       let axis = left.clone().add(right).rotateByDeg(-90).norm();
       return axis;
     case _scrollDirections.CUSTOM:
-      return Vector(customVector).norm();
+      return Vector.fromObject(customVector).norm();
     default:
-      return Vector({x: 1, y: 0});
+      return Vector.fromObject({x: 1, y: 0});
   }
 };
 
@@ -199,6 +201,112 @@ class SwipeSelector extends React.Component {
   constructor (props) {
     super(props) ;
     this.state = SwipeSelector.propsToState(props);
+    debugger;
+    console.log(super.apply);
+    this.panResponder = PanResponder.create({
+      onStartShouldSetPanResponderCapture: (e, gestureState) => {
+        // TODO: block touches to non-current index components
+        return false;
+      },
+
+      onMoveShouldSetPanResponderCapture: (e, gestureState) => {
+        return false; // Should not grab if interacting with something else
+      },
+
+      onStartShouldSetPanResponder: (e, gestureState) => {
+        // If the event is starting in the component and it bubbles up, grab it
+        return true;
+      },
+
+      onMoveShouldSetPanResponder: (e, gestureState) => {
+        return false; // Should not grab if interacting with something else
+      },
+
+      onPanResponderGrant: (e, gestureState) => {
+        // Do nothing, setup code is in onPanResponderStart
+      },
+
+      onPanResponderReject: (e, gestureState) => {
+        // Do nothing
+      },
+
+      onPanResponderStart: (e, gestureState) => {
+        // TODO: set up all resources required
+      },
+
+      onPanResponderEnd: (e, gestureState) => {
+        // TODO: release all resources used
+        // TODO: Determine transition (including threshold and st current index for objects and selector)
+        let displacement = Vector.fromObject({x: gestureState.dx, y: gestureState.dy});
+
+        let projection = displacement.clone().dot(this.state.unitVector);
+        let increment = projection/this.state.scrollDistance;
+
+        let animations = [];
+        for (let item of this.state.children) {
+          let newIndex;
+          if (increment > 0)
+            newIndex = (item.currentIndex + increment ) % (this.state.children.length);
+          else
+            newIndex = (item.currentIndex + increment + this.state.children.length) % (this.state.children.length);
+
+          newIndex = Math.round(newIndex);
+          animations.push( item.transition( newIndex, 150 ) );
+        }
+
+        Animated.parallel(animations).start( () => {
+          // Set the currentIndexes
+          for (let item of this.state.children) {
+            let newIndex;
+            if (increment > 0)
+              newIndex = (item.currentIndex + increment ) % (this.state.children.length);
+            else
+              newIndex = (item.currentIndex + increment + this.state.children.length) % (this.state.children.length);
+
+            newIndex = Math.round(newIndex) % this.state.children.length;
+            item.currentIndex = newIndex;
+          }
+        });
+      },
+
+      onPanResponderMove: (e, gestureState) => {
+        // TODO: Do the flicking thing
+        let displacement = Vector.fromObject({x: gestureState.dx, y: gestureState.dy});
+        let projection = displacement.clone().dot(this.state.unitVector);
+        let increment = projection/this.state.scrollDistance;
+
+        let updateRequired = false;
+        for (let item of this.state.children) {
+          let newIndex;
+          if (increment > 0)
+            newIndex = (item.currentIndex + increment ) % (this.state.children.length);
+          else
+            newIndex = (item.currentIndex + increment + this.state.children.length) % (this.state.children.length);
+
+          if (!updateRequired && Math.round(newIndex) !== Math.round(item.shownIndex))
+            updateRequired = true;
+
+          if ( (newIndex + 0.5) % (this.state.children.length) < 1 && this.state.shownIndex !== item.index)
+            this.state.shownIndex = item.index;
+
+          item.transitionTemp( newIndex );
+
+        }
+
+        if (updateRequired)
+          this.forceUpdate();
+
+      },
+
+      onPanResponderTerminationRequest: (e, gestureState) => {
+        return false; // DO NOT RELEASE THE RESPONDER UNTIL WE ARE DONE
+        // This allows you to use the area outside of the component for scrolling
+      },
+
+      onPanResponderTerminate: (e, gestureState) => {
+        // Do nothing
+      }
+    })
 
   }
 
@@ -269,10 +377,10 @@ class SwipeSelector extends React.Component {
 
     items = items.map(comp => comp.viewComponent);
 
-//{ ...this.state.panResponder.panHandlers }
+
     return (
       <View
-
+        { ...this.panResponder.panHandlers }
         ref={(ref) => this.wrapper = ref}
         style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100}}
       >

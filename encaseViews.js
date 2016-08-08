@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 import React from 'react';
 import { calculateInterpolationMap, calculate2DInterpolationMap, interpolationWindow} from './calculateInterpolationMap'
@@ -103,7 +103,10 @@ export default function encaseViews (state, items, descriptors) {
     'opacity'
   );
 
-
+  console.log(interpolationDescriptorOpacityMap);
+  console.log(interpolationOpacityMap);
+  console.log(interpolationScaleMap);
+  console.log(interpolationLocationMap);
   let encasedItems = items.map( (component, index) => {
     let location = new Animated.ValueXY({x: 0, y:0}); // default to center at {x:0, y:0}
     let scale = new Animated.ValueXY({x: 0, y:0}); // default to {x: 1, y: 1}
@@ -285,6 +288,7 @@ export default function encaseViews (state, items, descriptors) {
         this.shownIndex = moveTo;
       }
     };
+    // setTimeout(obj.transition(1), 250);
     return obj;
   });
 
