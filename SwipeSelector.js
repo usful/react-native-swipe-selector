@@ -201,8 +201,7 @@ class SwipeSelector extends React.Component {
   constructor (props) {
     super(props) ;
     this.state = SwipeSelector.propsToState(props);
-    debugger;
-    console.log(super.apply);
+
     this.panResponder = PanResponder.create({
       onStartShouldSetPanResponderCapture: (e, gestureState) => {
         // TODO: block touches to non-current index components
@@ -272,8 +271,11 @@ class SwipeSelector extends React.Component {
       onPanResponderMove: (e, gestureState) => {
         // TODO: Do the flicking thing
         let displacement = Vector.fromObject({x: gestureState.dx, y: gestureState.dy});
+        console.log(displacement);
         let projection = displacement.clone().dot(this.state.unitVector);
+        console.log(projection);
         let increment = projection/this.state.scrollDistance;
+        console.log(increment);
 
         let updateRequired = false;
         for (let item of this.state.children) {
@@ -289,6 +291,7 @@ class SwipeSelector extends React.Component {
           if ( (newIndex + 0.5) % (this.state.children.length) < 1 && this.state.shownIndex !== item.index)
             this.state.shownIndex = item.index;
 
+          console.log(newIndex);
           item.transitionTemp( newIndex );
 
         }

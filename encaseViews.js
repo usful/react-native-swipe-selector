@@ -37,6 +37,170 @@ const _prepBounds = function (centerVal, leftVal, rightVal, padLeft, padRight,
   }
 };
 
+class EncasedView {
+  constructor (component, descriptor, descriptorDistance, index, easing, interpolationMaps){
+
+    this._locationMap = interpolationMaps.location;
+    this._scaleMap = interpolationMaps.scale;
+    this._opacityMap = interpolationMaps.opacity;
+    this._descriptorOpacityMap = interpolationMaps.descriptorOpacity;
+    this._location = new Animated.ValueXY({x: 0, y:0});
+    this._scale = new Animated.ValueXY({x: 0, y:0});
+    this._opacity = new Animated.Value(0);
+    this._location.addListener((e)=>console.log(e));
+    this._opacity.addListener((e)=>console.log(e));
+    this._scale.addListener((e)=>console.log(e));
+
+    let componentPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
+
+    // interpolated properties
+    let transX;
+    let transY;
+
+    let scaleX;
+    let scaleY;
+
+    let opa;
+    let descOpa;
+
+    transX = this._location.x.interpolate({
+      inputRange: this._locationMap.inputRange,
+      outputRange: this._locationMap.x.outputRange
+    });
+    transY = this._location.y.interpolate({
+      inputRange: this._locationMap.inputRange,
+      outputRange: this._locationMap.y.outputRange
+    });
+    scaleX = this._scale.x.interpolate({
+      inputRange: this._scaleMap.inputRange,
+      outputRange: this._scaleMap.x.outputRange
+    });
+    scaleY = this._scale.y.interpolate({
+      inputRange: this._scaleMap.inputRange,
+      outputRange: this._scaleMap.x.outputRange
+    });
+    opa = this._opacity.interpolate({
+      inputRange: this._opacityMap.inputRange,
+      outputRange: this._opacityMap.opacity.outputRange
+    });
+
+    descOpa = this._opacity.interpolate({
+      inputRange: this._descriptorOpacityMap.inputRange,
+      outputRange: this._descriptorOpacityMap.opacity.outputRange
+    });
+    let key = uuid.v4();
+
+    let viewComponent = (
+      <Animated.View
+        key={key}
+        style={[ styles.itemViewStyle,
+          {
+            transform : [
+              {translateX: transX},
+              {translateY: transY},
+              {scaleX: scaleX},
+              {scaleY: scaleY}
+            ]
+          }
+        ]}
+      >
+        <Animated.View
+          style={[
+            {
+              opacity: descOpa,
+              transform: [
+                {translateY: Animated.add(componentPositionAdjustment.y, descriptorDistance)},
+                {translateX: componentPositionAdjustment.x}
+              ]
+            }
+          ]}
+        >
+          { descriptor ? <Text style={{textAlign:'center'}}>{descriptor}</Text> : null}
+        </Animated.View>
+        <Animated.View
+          onLayout={(e) => {
+            // center the components
+            let layout = e.nativeEvent.layout;
+            componentPositionAdjustment.setValue({x:0, y:(-layout.height/2-layout.y)})
+          }
+          }
+          style={[
+            {
+              opacity: opa,
+              alignItems: 'center', // centers along the x axis
+              transform : [
+                {translateY: componentPositionAdjustment.y},
+                {translateX: componentPositionAdjustment.x}
+              ]
+            }
+          ]}
+        >
+          { component }
+        </Animated.View>
+      </Animated.View>
+    );
+
+    this.component = component;
+    this.descriptor = descriptor;
+    this.viewComponent = viewComponent;
+
+    this._index = index;
+    this._shownIndex = 0;
+    this._easing = easing;
+  }
+
+  get locationState () {
+    return this._location;
+  }
+  get scaleState () {
+    this._scale;
+  }
+  get opacityState () {
+    this._opacity;
+  }
+
+  get currentIndex () {
+    return this._index;
+  }
+  set currentIndex (val) {
+    this._index = val;
+    return val;
+  }
+  get shownIndex () {
+    return this._shownIndex;
+  }
+  set shownIndex (val) {
+    this._shownIndex = val;
+    this._location.setValue({x:val, y: val});
+    this._scale.setValue({x: val, y: val});
+    this._opacity.setValue(val);
+    return val;
+  }
+
+  transition (moveTo, duration = 1000) {
+    let animations = [];
+
+    let animSettings = {
+      fromValue: this.currentIndex,
+      toValue: moveTo,
+      duration: duration,
+      easing: this._easing
+    };
+
+    animations.push(Animated.timing(this._location.x, animSettings));
+    animations.push(Animated.timing(this._location.y, animSettings));
+    animations.push(Animated.timing(this._scale.x, animSettings));
+    animations.push(Animated.timing(this._scale.y, animSettings));
+    animations.push(Animated.timing(this._opacity, animSettings));
+
+    return Animated.parallel(animations);
+  }
+
+  transitionTemp (moveTo) {
+    this.shownIndex = moveTo;
+  }
+}
+
 export default function encaseViews (state, items, descriptors) {
 
   if (!Array.isArray(items)) items = [items];
@@ -103,193 +267,19 @@ export default function encaseViews (state, items, descriptors) {
     'opacity'
   );
 
-  console.log(interpolationDescriptorOpacityMap);
-  console.log(interpolationOpacityMap);
-  console.log(interpolationScaleMap);
-  console.log(interpolationLocationMap);
+  let interpolationMaps = {
+    location: interpolationLocationMap,
+    scale: interpolationScaleMap,
+    opacity: interpolationOpacityMap,
+    descriptorOpacity: interpolationDescriptorOpacityMap
+  };
+
   let encasedItems = items.map( (component, index) => {
-    let location = new Animated.ValueXY({x: 0, y:0}); // default to center at {x:0, y:0}
-    let scale = new Animated.ValueXY({x: 0, y:0}); // default to {x: 1, y: 1}
-    let opacity = new Animated.Value(0); // default to full opacity
 
-    let transX = {};
-    let transY = {};
-
-    let scaleX = {};
-    let scaleY = {};
-
-    let opa = {};
-    let descOpa = {};
-
-    // These values are used to center the images and descriptors
-    let _adjustComponentPosition = new Animated.ValueXY({x :0, y:0});
-
-    transX = location.x.interpolate({
-      inputRange: interpolationLocationMap.inputRange,
-      outputRange: interpolationLocationMap.x.outputRange
-    });
-    transY = location.y.interpolate({
-      inputRange: interpolationLocationMap.inputRange,
-      outputRange: interpolationLocationMap.y.outputRange
-    });
-    scaleX = scale.x.interpolate({
-      inputRange: interpolationScaleMap.inputRange,
-      outputRange: interpolationScaleMap.x.outputRange
-    });
-    scaleY = scale.y.interpolate({
-      inputRange: interpolationScaleMap.inputRange,
-      outputRange: interpolationScaleMap.x.outputRange
-    });
-    opa = opacity.interpolate({
-      inputRange: interpolationOpacityMap.inputRange,
-      outputRange: interpolationOpacityMap.opacity.outputRange
-    });
-    descOpa = opacity.interpolate({
-      inputRange: interpolationDescriptorOpacityMap.inputRange,
-      outputRange: interpolationDescriptorOpacityMap.opacity.outputRange
-    });
-
-    let key = uuid.v4();
     let descriptor = ( descriptors && descriptors.length > index ? descriptors[index] : null );
-    let viewComponent =
-      <Animated.View
-        key={key}
-        style={[ styles.itemViewStyle,
-          {
-            transform : [
-              {translateX: transX},
-              {translateY: transY},
-              {scaleX: scaleX},
-              {scaleY: scaleY}
-            ]
-          }
-        ]}
-      >
-        <Animated.View
-          style={[
-            {
-              opacity: descOpa,
-              transform: [
-                {translateY: Animated.add(_adjustComponentPosition.y, state.descriptorDistance)}
-              ]
-            }
-          ]}
-        >
-          { descriptor ? <Text style={{textAlign:'center'}}>{descriptor}</Text> : null}
-        </Animated.View>
-        <Animated.View
-          onLayout={(e) => {
-            // center the components
-            let layout = e.nativeEvent.layout;
-            _adjustComponentPosition.setValue({x:0, y:(-layout.height/2-layout.y)})
-          }
-          }
-          style={[
-            {
-              opacity: opa,
-              alignItems: 'center', // centers along the x axis
-              transform : [
-                {translateY: _adjustComponentPosition.y}
-              ]
-            }
-          ]}
-        >
-          { component }
-        </Animated.View>
-      </Animated.View>;
 
-    let obj = {
-      component: component,
-      descriptor: descriptor,
-      viewComponent: viewComponent,
-      location: location,
-      scale: scale,
-      opacity: opacity,
-      index: index,
-      _easing: state.easing,
-      _adjustComponentPosition: _adjustComponentPosition,
-      _shownIndex: 0, // Represents where the item appears to be
-      get shownIndex () {
-        return this._shownIndex;
-      },
-      set shownIndex (val) {
-        this._shownIndex = val;
-        this.location.setValue({x: val, y: val});
-        this.scale.setValue({x: val, y: val});
-        this.opacity.setValue(val);
-        return val;
-      },
-      _currentIndex: 0, // Represents where the item actually is (during a scroll this doesn't change)
-      get currentIndex () {
-        return this._currentIndex;
-      },
-      set currentIndex (val) {
-        this._currentIndex = val;
-        this.shownIndex = val;
-        return val;
-      },
-      transition: function (moveTo, duration = 1000) {
-        let animations = [];
 
-        animations.push(Animated.timing(
-          this.location.x,
-          {
-            fromValue: this.currentIndex,
-            toValue: moveTo,
-            duration: duration,
-            easing: this._easing
-          }
-          )
-        );
-        animations.push(Animated.timing(
-          this.location.y,
-          {
-            fromValue: this.currentIndex,
-            toValue: moveTo,
-            duration: duration,
-            easing: this._easing
-          }
-          )
-        );
-        animations.push(Animated.timing(
-          this.scale.x,
-          {
-            fromValue: this.currentIndex,
-            toValue: moveTo,
-            duration: duration,
-            easing: this._easing
-          }
-          )
-        );
-        animations.push(Animated.timing(
-          this.scale.y,
-          {
-            fromValue: this.currentIndex,
-            toValue: moveTo,
-            duration: duration,
-            easing: this._easing
-          }
-          )
-        );
-        animations.push(Animated.timing(
-          this.opacity,
-          {
-            fromValue: this._currentIndex,
-            toValue: moveTo,
-            duration: duration,
-            easing: this._easing
-          }
-          )
-        );
-
-        return Animated.parallel(animations);
-      },
-      transitionTemp: function (moveTo) {
-        this.shownIndex = moveTo;
-      }
-    };
-    // setTimeout(obj.transition(1), 250);
-    return obj;
+    return new EncasedView(component, descriptor, state.descriptorDistance, index, state._easing, interpolationMaps);
   });
 
   return encasedItems;

@@ -10,6 +10,7 @@ function bound (num, bounds){
 
 /**
  * Returns a generator that runs through [start, end) (non-inclusive) with an increment of size step (default of 1)
+ * Similar to Python xrange function
  * @param {number} start the first number
  * @param {number} end
  * @param {number} [step=1]
