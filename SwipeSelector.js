@@ -257,10 +257,11 @@ class SwipeSelector extends React.Component {
           // Set the currentIndexes
           for (let item of this.state.children) {
             let newIndex;
-            if (increment > 0)
-              newIndex = (item.currentIndex + increment ) % (this.state.children.length);
-            else
-              newIndex = (item.currentIndex + increment + this.state.children.length) % (this.state.children.length);
+            let offset = item.currentIndex + increment;
+            let length = this.state.children.length;
+
+            // This double modulo is to deal with negative direction amounts
+            newIndex = ( (offset % length) + length) % length ;
 
             newIndex = Math.round(newIndex) % this.state.children.length;
             item.currentIndex = newIndex;
@@ -277,10 +278,11 @@ class SwipeSelector extends React.Component {
         let updateRequired = false;
         for (let item of this.state.children) {
           let newIndex;
-          if (increment > 0)
-            newIndex = (item.currentIndex + increment ) % (this.state.children.length);
-          else
-            newIndex = (item.currentIndex + increment + this.state.children.length) % (this.state.children.length);
+          let offset = item.currentIndex + increment;
+          let length = this.state.children.length;
+
+          // This double modulo is to deal with negative direction amounts
+          newIndex = ( (offset % length) + length) % length ;
 
           if (!updateRequired && Math.round(newIndex) !== Math.round(item.shownIndex))
             updateRequired = true;

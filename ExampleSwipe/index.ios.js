@@ -30,6 +30,8 @@ class ExampleSwipe extends Component {
       <View style={styles.container}>
         <SwipeSelector>
           <Text>This is a string</Text>
+          <Text>Perhaps another string?</Text>
+          <Text>Last string</Text>
         </SwipeSelector>
 
       </View>
