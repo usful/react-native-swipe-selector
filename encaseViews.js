@@ -47,9 +47,6 @@ class EncasedView {
     this._location = new Animated.ValueXY({x: 0, y:0});
     this._scale = new Animated.ValueXY({x: 0, y:0});
     this._opacity = new Animated.Value(0);
-    this._location.addListener((e)=>console.log(e));
-    this._opacity.addListener((e)=>console.log(e));
-    this._scale.addListener((e)=>console.log(e));
 
     let componentPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
 

@@ -1,6 +1,6 @@
 {
   "name": "react-native-swipe-selector",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A react component that allows swiping to select an option from a carousel, while showing other items next to it",
   "main": "SwipeSelector.js",
   "scripts": {
