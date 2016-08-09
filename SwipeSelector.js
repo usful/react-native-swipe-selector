@@ -15,10 +15,10 @@ import Vector from 'victor';
  * @private
  */
 const _scrollDirections = {
-  HORIZONTAL: 'horizontal', // scroll right increases index
-  VERTICAL: 'vertical', // scroll down increases index
-  ADAPTIVE: 'adaptive', // adapts the scroll axis to the direction of the vanishing points
-  CUSTOM: 'custom' // custom scroll vector
+  HORIZONTAL: Symbol('horizontal'), // scroll right increases index
+  VERTICAL: Symbol('vertical'), // scroll down increases index
+  ADAPTIVE: Symbol('adaptive'), // adapts the scroll axis to the direction of the vanishing points
+  CUSTOM: Symbol('custom') // custom scroll vector
 };
 
 /**
@@ -57,9 +57,9 @@ const _resolveScrollDirections = function(scrollDirection,
  * @private
  */
 const _scaling = {
-  LINEAR: 'linear',
-  LOGARITHMIC: 'logarithmic',
-  SQRT: 'sqrt'
+  LINEAR: Symbol('linear'),
+  LOGARITHMIC: Symbol('logarithmic'),
+  SQRT: Symbol('sqrt')
 };
 
 const _resolveScaling = function(scaling) {
@@ -295,7 +295,7 @@ class SwipeSelector extends React.Component {
           newIndex = ( (offset % length) + length) % length ;
 
 
-          if ( Math.round(newIndex) < 1 && this.state.currentIndex !== item.index)
+          if ( ( Math.round(newIndex) < 1 || Math.round(newIndex) === length ) && this.state.currentIndex !== item.index)
             this.setState({currentIndex: item.index});
 
           item.transitionTemp( newIndex );
@@ -364,6 +364,7 @@ class SwipeSelector extends React.Component {
       animations.push(child.transition(finalIndex));
     });
     Animated.parallel(animations).start( ({finished: finished}) => {
+      if (!finished) return;
       this.state.children.forEach( (child) => {
         child.currentIndex = 0;
         child.shownIndex = 0;
@@ -430,7 +431,7 @@ class SwipeSelector extends React.Component {
       <View
         { ...this.panResponder.panHandlers }
         ref={(ref) => this.wrapper = ref}
-        style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100}}
+        style={{ flex: 1, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', marginTop: 100}}
       >
         {items}
         <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {this.contractItems(); setTimeout(this.expandItems.bind(this), 1500);} }><Text>DEBUG</Text></TouchableOpacity>
