@@ -237,7 +237,11 @@ class SwipeSelector extends React.Component {
 
       onPanResponderStart: (e, gestureState) => {
         // TODO: set up all resources required
-        // TODO: this should set the current indexes, just in case
+        this.state.children.forEach( (child) => {
+          let finalIndex =_indexToPosition(this.state.currentIndex, child.index, this.state.children.length);
+          child.currentIndex = finalIndex;
+          child.shownIndex = finalIndex;
+        });
       },
 
       onPanResponderEnd: (e, gestureState) => {
