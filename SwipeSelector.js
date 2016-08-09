@@ -105,6 +105,14 @@ const _defaultProps = {
   unitVector: null
 };
 
+const _indexToPosition = function(currentIndex, itemIndex, maxIndex) {
+  let newIndex;
+  let offset = itemIndex - currentIndex;
+  newIndex = ( (offset % maxIndex) + maxIndex ) % maxIndex ;
+
+  return newIndex;
+};
+
 const styles = StyleSheet.create({
   dot: {
     width: 4,
@@ -252,9 +260,9 @@ class SwipeSelector extends React.Component {
           animations.push( item.transition( newIndex, 150 ) );
         }
 
-        Animated.parallel(animations).start( ({finished: done}) => {
+        Animated.parallel(animations).start( ({finished: finished}) => {
 
-          if (!done) return;
+          if (!finished) return;
 
           // Set the currentIndexes
           for (let item of this.state.children) {
@@ -326,15 +334,45 @@ class SwipeSelector extends React.Component {
 
   expandItems() {
     // If we're not in a contracted state, then don't do anything
-    if (this.state.children.some( child => child.index !== 0 && child.index !== this.state.children.length)) return;
+    if (this.state.children.some( child => child.currentIndex !== 0 && child.currentIndex !== this.state.children.length)) return;
 
     let animations = [];
-    let children = this.circularize(this.state.children, this.state.currentIn);
-    for (let child in children) {
+    this.state.children.forEach( (child) => {
+      let finalIndex = _indexToPosition(this.state.currentIndex, child.index, this.state.children.length);
+      let startIndex = Math.round(finalIndex/this.state.children.length) * (this.state.children.length) ;
 
-    }
+      child.currentIndex = startIndex;
+      child.shownIndex = startIndex;
+      animations.push(child.transition(finalIndex));
+    });
+    Animated.parallel(animations).start( ({finished: finished}) => {
+
+      if (!finished) return;
+      this.state.children.forEach( (child) => {
+        let finalIndex = _indexToPosition(this.state.currentIndex, child.index, this.state.children.length);
+        child.currentIndex = finalIndex;
+        child.shownIndex = finalIndex;
+      });
+    })
 
   }
+
+  contractItems() {
+    let animations = [];
+    this.state.children.forEach( (child) => {
+      let finalIndex = Math.round(child.shownIndex/this.state.children.length) * (this.state.children.length);
+      animations.push(child.transition(finalIndex));
+    });
+    Animated.parallel(animations).start( ({finished: finished}) => {
+      this.state.children.forEach( (child) => {
+        child.currentIndex = 0;
+        child.shownIndex = 0;
+      })
+    });
+
+  }
+
+
 
   _collateItems(items, currentIndex = 0) {
     //collate items and prepare for rendering
@@ -381,7 +419,6 @@ class SwipeSelector extends React.Component {
   }
 
   render() {
-    console.log(this.state.currentIndex);
     let items = this.state.children;
 
     items = this._collateItems(items, this.state.currentIndex);
@@ -396,7 +433,7 @@ class SwipeSelector extends React.Component {
         style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100}}
       >
         {items}
-        <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {let self = this; debugger;} }><Text>DEBUG</Text></TouchableOpacity>
+        <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {this.contractItems(); setTimeout(this.expandItems.bind(this), 1500);} }><Text>DEBUG</Text></TouchableOpacity>
       </View>
 
     );
