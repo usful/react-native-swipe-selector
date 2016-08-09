@@ -24,14 +24,20 @@ class ExampleSwipe extends Component {
 // {/*Press Cmd+R to reload,{'\n'}*/}
 // {/*Cmd+D or shake for dev menu*/}
 // {/*</Text>*/}
-
+  constructor(props) {
+    super(props);
+    this.state = {
+      num: 0
+    }
+  }
   render() {
     return (
       <View style={styles.container}>
-        <SwipeSelector>
-          <Text>This is a string</Text>
-          <Text>Perhaps another string?</Text>
-          <Text>Last string</Text>
+        <SwipeSelector onChange={
+                    ({index:index}) => this.setState({num: index})}>
+          <Text>{this.state.num} This is a string</Text>
+          <Text>{this.state.num} Perhaps another string?</Text>
+          <Text>{this.state.num} Last string</Text>
         </SwipeSelector>
 
       </View>

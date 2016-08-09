@@ -89,6 +89,7 @@ const _defaultScalingOptions = {
 };
 
 const _defaultProps = {
+  onChange: () => {},
   descriptorDistance: 20,
   descriptorAbove: true,
   leftPoint: {x: -150, y: 25},
@@ -238,7 +239,7 @@ class SwipeSelector extends React.Component {
       onPanResponderStart: (e, gestureState) => {
         // TODO: set up all resources required
         this.state.children.forEach( (child) => {
-          let finalIndex =_indexToPosition(this.state.currentIndex, child.index, this.state.children.length);
+          let finalIndex =_indexToPosition(this.currentIndex, child.index, this.state.children.length);
           child.currentIndex = finalIndex;
           child.shownIndex = finalIndex;
         });
@@ -246,7 +247,6 @@ class SwipeSelector extends React.Component {
 
       onPanResponderEnd: (e, gestureState) => {
         // TODO: release all resources used
-        // TODO: Determine transition (including threshold and st current index for objects and selector)
         let displacement = Vector.fromObject({x: gestureState.dx, y: gestureState.dy});
 
         let projection = displacement.clone().dot(this.state.unitVector);
@@ -299,8 +299,8 @@ class SwipeSelector extends React.Component {
           newIndex = ( (offset % length) + length) % length ;
 
 
-          if ( ( Math.round(newIndex) < 1 || Math.round(newIndex) === length ) && this.state.currentIndex !== item.index)
-            this.setState({currentIndex: item.index});
+          if ( ( Math.round(newIndex) < 1 || Math.round(newIndex) === length ) && this.currentIndex !== item.index)
+            this.currentIndex = item.index;
 
           item.transitionTemp( newIndex );
 
@@ -318,6 +318,15 @@ class SwipeSelector extends React.Component {
       }
     })
 
+  }
+
+  get currentIndex () {
+    return this.state.currentIndex;
+  }
+
+  set currentIndex (val) {
+    this.setState({currentIndex: val}, this.props.onChange({index: val, component: this.state.children[val].component}));
+    return val
   }
 
   componentWillMount() {
@@ -342,7 +351,7 @@ class SwipeSelector extends React.Component {
 
     let animations = [];
     this.state.children.forEach( (child) => {
-      let finalIndex = _indexToPosition(this.state.currentIndex, child.index, this.state.children.length);
+      let finalIndex = _indexToPosition(this.currentIndex, child.index, this.state.children.length);
       let startIndex = Math.round(finalIndex/this.state.children.length) * (this.state.children.length) ;
 
       child.currentIndex = startIndex;
@@ -353,7 +362,7 @@ class SwipeSelector extends React.Component {
 
       if (!finished) return;
       this.state.children.forEach( (child) => {
-        let finalIndex = _indexToPosition(this.state.currentIndex, child.index, this.state.children.length);
+        let finalIndex = _indexToPosition(this.currentIndex, child.index, this.state.children.length);
         child.currentIndex = finalIndex;
         child.shownIndex = finalIndex;
       });
@@ -426,7 +435,7 @@ class SwipeSelector extends React.Component {
   render() {
     let items = this.state.children;
 
-    items = this._collateItems(items, this.state.currentIndex);
+    items = this._collateItems(items, this.currentIndex);
 
     items = items.map(comp => comp.viewComponent);
 
