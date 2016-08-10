@@ -1,3 +1,4 @@
+"use strict";
 /**
  * Returns a number bounded by an upper and lower value
  * @param {number} num
@@ -17,7 +18,7 @@ function bound (num, bounds){
  */
 function* range (start, end, step = 1) {
 
-  current = start;
+  let current = start;
   while (current < end) {
     yield current;
     current += step;
@@ -48,4 +49,70 @@ function* circularize (array, currentIndex = 0, bounded = false) {
   }
 }
 
-export {bound, range, circularize}
+function _isPrimitive (val) {
+  return typeof val === 'number'
+    || typeof val === 'boolean'
+    || typeof val === 'string'
+    || typeof val === 'symbol'
+    || typeof val === 'function';
+}
+
+function _generateOwnKeyList (obj) {
+  let set = [];
+  for (let key in obj) {
+    if (obj.hasOwnProperty(key))
+      set.push(key)
+  }
+  return set;
+}
+
+/**
+ * This is not cyclic safe. If you pass it a cyclic object, it will create
+ *  a stack overflow.
+ * @param {object} obj1
+ * @param {object} obj2
+ * @param {[string]} ignoreKeys
+ * @returns {boolean}
+ */
+function deepCompare (obj1, obj2, ignoreKeys = []){
+
+  let isPrimitive = _isPrimitive;
+
+  if (obj1 !== obj2) {
+    let keys1 = _generateOwnKeyList(obj1);
+    let keys2 = _generateOwnKeyList(obj2);
+    keys1 = keys1.filter( key => ignoreKeys.indexOf(key) === -1);
+    keys2 = keys2.filter( key => ignoreKeys.indexOf(key) === -1);
+    keys1.sort();
+    keys2.sort();
+
+    if (keys1.length !== keys2.length || keys1.some( (e, ix) => e !== keys2[ix]))
+      return false;
+
+
+    for (let key of keys1) {
+      let prop1 = obj1[key];
+      let prop2 = obj2[key];
+
+      if (typeof prop1 === 'object' && prop1 !== null) prop1 = prop1.valueOf();
+      if (typeof prop2 === 'object' && prop2 !== null) prop2 = prop2.valueOf();
+
+      if (isPrimitive(prop1) || isPrimitive(prop2)) {
+        if (prop1 !== prop2)
+          return false;
+
+        continue;
+      }
+      else {
+        if (!deepCompare(prop1, prop2, ignoreKeys))
+          return false;
+
+        continue;
+      }
+    }
+  }
+
+  return true;
+}
+
+export {bound, range, circularize, deepCompare}

@@ -46,6 +46,7 @@ class EncasedView {
     this._descriptorOpacityMap = interpolationMaps.descriptorOpacity;
     this._location = new Animated.ValueXY({x: 0, y:0});
     this._scale = new Animated.ValueXY({x: 0, y:0});
+    this._scaleMultiplier = new Animated.Value(1);
     this._opacity = new Animated.Value(0);
 
     this._componentPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
@@ -108,8 +109,8 @@ class EncasedView {
             transform : [
               {translateX: transX},
               {translateY: transY},
-              {scaleX: scaleX},
-              {scaleY: scaleY}
+              {scaleX: Animated.multiply(scaleX, this._scaleMultiplier)},
+              {scaleY: Animated.multiply(scaleY, this._scaleMultiplier)}
             ]
           }
         ]}
@@ -201,12 +202,34 @@ class EncasedView {
     return this._descriptor;
   }
   set descriptor (val) {
-    this._component = val;
+    this._descriptor = val;
     this._viewComponent = this._generateViewComponent();
     return val;
   }
   get viewComponent () {
     return this._viewComponent;
+  }
+
+  shrink (duration = 1000) {
+    Animated.timing(
+      this._scaleMultiplier,
+      {
+        toValue: 0,
+        duration: duration,
+        easing: Easing.linear
+      }
+    )
+  }
+
+  restore (duration = 1000) {
+    Animated.timing(
+      this._scaleMultiplier,
+      {
+        toValue: 1,
+        duration: duration,
+        easing: Easing.linear
+      }
+    )
   }
 
   transition (moveTo, duration = 1000) {
@@ -233,9 +256,9 @@ class EncasedView {
   }
 }
 
-export default function encaseViews (state, items, descriptors) {
+export default function encaseViews (state, children, descriptors) {
 
-  if (!Array.isArray(items)) items = [items];
+  if (!Array.isArray(children)) children = [children];
 
   let interpolationLocationMap = calculate2DInterpolationMap(
     _prepBounds(
@@ -293,7 +316,7 @@ export default function encaseViews (state, items, descriptors) {
       default: 0,
       range: [
         { start: 0, end: 1 },
-        { start: state.children.length - 1, end: state.children.length }
+        { start: children.length - 1, end: children.length }
       ]
     },
     'opacity'
@@ -306,7 +329,7 @@ export default function encaseViews (state, items, descriptors) {
     descriptorOpacity: interpolationDescriptorOpacityMap
   };
 
-  let encasedItems = items.map( (component, index) => {
+  let encasedItems = children.map( (component, index) => {
 
     let descriptor = ( descriptors && descriptors.length > index ? descriptors[index] : null );
 

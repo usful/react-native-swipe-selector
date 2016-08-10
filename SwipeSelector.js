@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { StyleSheet, Text, View, Animated, Easing, PanResponder, TouchableOpacity } from 'react-native';
-import { bound, range, circularize } from './helpers';
+import { bound, range, circularize, deepCompare } from './helpers';
 import { scaleLinear, scaleLogarithmic, scaleSqrt } from './scalers'
 import encaseViews from './encaseViews';
 
@@ -119,7 +119,7 @@ const _getUniqueKeySet = function (compArr) {
   return new Set(compArr.map( e => e.props.id ).filter( e => e ));
 };
 
-const _checkUniqueKeys = function(objArr) {
+const _checkUniqueIds = function(objArr) {
   let keys = _getUniqueKeySet(objArr);
   return keys.size === objArr.length;
 };
@@ -166,12 +166,13 @@ class SwipeSelector extends React.Component {
   };
 
   // TODO: move to outside the class
-  static propsToState(props) {
+  static propsToState(props, createViewComponents = true) {
 
     let children = React.Children.toArray(props.children);
+    let descriptors = children.map( el => ( el.props.descriptor || '' ))
 
     //Check if unique keys are given
-    if (!_checkUniqueKeys(children)) {
+    if (!_checkUniqueIds(children)) {
       console.warn('Child elements require unique keys to update. Lack of unique keys will force a full component update whenever there is a re-render');
     }
 
@@ -179,9 +180,8 @@ class SwipeSelector extends React.Component {
     let hideCount = (props.hide) ? max(children.length-props.show, 0) : 0;
 
     let state = {
-      children: children,
-      items: null,
-      descriptors: children.map( el => ( el.props.descriptor || '' )),
+      children: null, // resolved to a value below
+      descriptors: descriptors,
       descriptorDistance: props.descriptorDistance,
       descriptorAbove: props.descriptorAbove,
       leftPoint: props.leftPoint,
@@ -215,7 +215,9 @@ class SwipeSelector extends React.Component {
       state.scrollDistance = props.simpleScrollDistance;
     }
 
-    state.children = encaseViews(state, state.children, state.descriptors);
+    if (createViewComponents) {
+      state.children = encaseViews(state, children, descriptors);
+    }
 
     return state;
   }
@@ -358,42 +360,42 @@ class SwipeSelector extends React.Component {
     let oldChildren = React.Children.toArray(this.props.children);
     let newChildren = React.Children.toArray(nextProps.children);
 
-    let oldUniqueKeys = _checkUniqueKeys(oldChildren);
-    let newUniqueKeys = _checkUniqueKeys(newChildren);
+    // If there are changes outside of descriptors or components, need to do a full update
+    let newState = SwipeSelector.propsToState(nextProps, false);
 
-    // non-unique or missing keys
-    if (!newUniqueKeys) {
-      console.warn('Child elements require unique keys to update. Lack of unique keys will force a full component update whenever there is a re-render');
+    // Is this a refresh
+    if (!deepCompare(this.state, newState, ['children', 'descriptors'])) {
+      // full refresh, so may as well regenerate the entire state object
+      newState = SwipeSelector.propsToState(nextProps, true);
     }
-
-    // If this is a simple update
-    // Need to check that both keys are internally fully defined and unique
-    //  AND that the children are overlapping perfectly in the same order
-    if (oldUniqueKeys
-          && newUniqueKeys
-          && oldChildren.length === newChildren.length
-          && oldChildren.every( (child, ix) => child.props.id === newChildren[ix].props.id)) {
-
-      newComponents = oldComponents.map( (comp, ix) => { comp.component = newChildren[ix]; return comp;});
-      this.setState({children: newComponents});
-    }
-    // otherwise we need to contract the selector, swap the components, and then reinitialize the selector
+    // Might have absolutely no changes, but can't say for sure
     else {
-      this.setState(SwipeSelector.propsToState(nextProps));
-    }
+      let oldUniqueIds = _checkUniqueIds(oldChildren);
+      let newUniqueIds = _checkUniqueIds(newChildren);
 
+      // If this is a simple update
+      // Need to check that both keys are internally fully defined and unique
+      //  AND that the children are overlapping perfectly in the same order
+      if (oldUniqueIds
+            && newUniqueIds
+            && oldChildren.length === newChildren.length
+            && oldChildren.every( (child, ix) => child.props.id === newChildren[ix].props.id)) {
+
+        newComponents = oldComponents.map((comp, ix) => {
+          comp.component = newChildren[ix];
+          comp.descriptor = newChildren[ix].props.descriptor || '';
+          return comp;
+        });
+
+        this.setState({children: newComponents});
+      }
+
+      // This is a change of children
+      newState = SwipeSelector.propsToState(nextProps, true);
+
+    }
 
     return;
-
-
-    // newChildren.forEach( child => {
-    //   if (child.props.key)
-    //     let oldComponent = oldComponents.find( comp => comp.component.key)
-    // });
-    //
-    // this.setState({children: newComponents});
-
-
 
   }
 
@@ -401,7 +403,7 @@ class SwipeSelector extends React.Component {
     return true;
   }
 
-  expandItems() {
+  expandItems(cb) {
     // If we're not in a contracted state, then don't do anything
     if (this.state.children.some( child => child.currentIndex !== 0 && child.currentIndex !== this.state.children.length)) return;
 
@@ -417,27 +419,34 @@ class SwipeSelector extends React.Component {
     Animated.parallel(animations).start( ({finished: finished}) => {
 
       if (!finished) return;
+
       this.state.children.forEach( (child) => {
         let finalIndex = _indexToPosition(this.currentIndex, child.index, this.state.children.length);
         child.currentIndex = finalIndex;
         child.shownIndex = finalIndex;
       });
+
+      if (cb) cb(this.state.children);
     })
 
   }
 
-  contractItems() {
+  contractItems(cb) {
     let animations = [];
     this.state.children.forEach( (child) => {
       let finalIndex = Math.round(child.shownIndex/this.state.children.length) * (this.state.children.length);
       animations.push(child.transition(finalIndex));
     });
     Animated.parallel(animations).start( ({finished: finished}) => {
+
       if (!finished) return;
+
       this.state.children.forEach( (child) => {
         child.currentIndex = 0;
         child.shownIndex = 0;
-      })
+      });
+
+      if (cb) cb(this.state.children);
     });
 
   }
@@ -492,14 +501,13 @@ class SwipeSelector extends React.Component {
     let items = this.state.children;
 
     items = this._collateItems(items, this.currentIndex);
-
     items = items.map(comp => comp.viewComponent);
 
 
     return (
       <View
         { ...this.panResponder.panHandlers }
-        ref={(ref) => this.wrapper = ref}
+        ref={(ref) => {this.wrapper = ref}}
         style={{ flex: 1, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', marginTop: 100}}
       >
         {items}
