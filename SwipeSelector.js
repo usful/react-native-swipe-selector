@@ -334,6 +334,8 @@ class SwipeSelector extends React.Component {
       }
     })
 
+    this.nextState = null;
+
   }
 
   get currentIndex () {
@@ -341,7 +343,7 @@ class SwipeSelector extends React.Component {
   }
 
   set currentIndex (val) {
-    this.setState({currentIndex: val}, this.props.onChange({index: val, component: this.state.children[val].component}));
+    this.setState({currentIndex: val}, () => this.props.onChange({index: val, component: this.state.children[val].component}));
     return val
   }
 
@@ -364,9 +366,20 @@ class SwipeSelector extends React.Component {
     let newState = SwipeSelector.propsToState(nextProps, false);
 
     // Is this a refresh
-    if (!deepCompare(this.state, newState, ['children', 'descriptors'])) {
+    if (!deepCompare(this.state, newState, ['children', 'descriptors', 'currentIndex'])) {
       // full refresh, so may as well regenerate the entire state object
       newState = SwipeSelector.propsToState(nextProps, true);
+      newState.children.forEach( e => e.shrink(0));
+      this.nextState = newState;
+      this.shrinkItems( ({finished: finished}) => {
+
+        if (!finished) return;
+
+        this.setState(newState, () => {
+          this.restoreItems();
+          this.expandItems();
+        })
+      });
     }
     // Might have absolutely no changes, but can't say for sure
     else {
@@ -387,12 +400,24 @@ class SwipeSelector extends React.Component {
           return comp;
         });
 
+        this.nextState = null;
         this.setState({children: newComponents});
       }
+      else {
+        // This is a change of children
+        newState = SwipeSelector.propsToState(nextProps, true);
+        newState.children.forEach(e => e.shrink(0));
+        this.nextState = newState;
+        this.shrinkItems(({finished: finished}) => {
 
-      // This is a change of children
-      newState = SwipeSelector.propsToState(nextProps, true);
+          if (!finished) return;
 
+          this.setState(newState, () => {
+            this.restoreItems();
+            this.expandItems();
+          })
+        });
+      }
     }
 
     return;
@@ -449,6 +474,18 @@ class SwipeSelector extends React.Component {
       if (cb) cb(this.state.children);
     });
 
+  }
+
+  restoreItems(cb, duration = 1000) {
+    this.state.children.forEach( child => {
+      child.restore(cb, duration);
+    });
+  }
+
+  shrinkItems(cb, duration = 1000) {
+    this.state.children.forEach( child => {
+      child.shrink(cb, duration);
+    });
   }
 
 
@@ -511,7 +548,7 @@ class SwipeSelector extends React.Component {
         style={{ flex: 1, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center', marginTop: 100}}
       >
         {items}
-        <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {this.contractItems(); setTimeout(this.expandItems.bind(this), 1500);} }><Text>DEBUG</Text></TouchableOpacity>
+        <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {this.state.children.forEach(e => e.shrink());} }><Text>DEBUG</Text></TouchableOpacity>
       </View>
 
     );

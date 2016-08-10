@@ -53,8 +53,7 @@ function _isPrimitive (val) {
   return typeof val === 'number'
     || typeof val === 'boolean'
     || typeof val === 'string'
-    || typeof val === 'symbol'
-    || typeof val === 'function';
+    || typeof val === 'symbol';
 }
 
 function _generateOwnKeyList (obj) {
@@ -96,6 +95,8 @@ function deepCompare (obj1, obj2, ignoreKeys = []){
 
       if (typeof prop1 === 'object' && prop1 !== null) prop1 = prop1.valueOf();
       if (typeof prop2 === 'object' && prop2 !== null) prop2 = prop2.valueOf();
+
+      if (typeof prop1 === 'function' || typeof prop2 === 'function') continue;
 
       if (isPrimitive(prop1) || isPrimitive(prop2)) {
         if (prop1 !== prop2)

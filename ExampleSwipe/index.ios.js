@@ -9,37 +9,48 @@ import {
   AppRegistry,
   StyleSheet,
   Text,
-  View
+  View,
+  TouchableHighlight
 } from 'react-native';
 import SwipeSelector from 'react-native-swipe-selector';
 
 class ExampleSwipe extends Component {
-//   // <Text style={styles.welcome}>
-//   //   Welcome to React Native!
-//   // </Text>
-//   // <Text style={styles.instructions}>
-//   //   To get started, edit index.ios.js
-//   // </Text>
-// {/*<Text style={styles.instructions}>*/}
-// {/*Press Cmd+R to reload,{'\n'}*/}
-// {/*Cmd+D or shake for dev menu*/}
-// {/*</Text>*/}
+
   constructor(props) {
     super(props);
     this.state = {
       num: 0
-    }
+    };
+    this.elements = [
+      <Text key="1" id="1">This is a string</Text>,
+      <Text key="2" id="2">Perhaps another string?</Text>,
+      <Text key="3" id="3">Last string</Text>,
+    ];
   }
+
   render() {
+
+    let elements = [].concat(this.elements).concat(
+      [
+        <TouchableHighlight key="4" id="4"
+                                                                         onPress={() => {
+                                                                           this.elements.sort(() => 0.5 - Math.random());
+                                                                           this.setState({});
+                                                                         }}
+        >
+          <Text>Click Me!</Text>
+        </TouchableHighlight>,
+        <Text key="5" id="5">Current: {this.state.num}</Text>
+      ]);
+
     return (
       <View style={styles.container}>
         <SwipeSelector onChange={
-                    ({index:index}) => this.setState({num: index})}>
-          <Text id="1">Current: {this.state.num} This is a string</Text>
-          <Text id="2">Current: {this.state.num} Perhaps another string?</Text>
-          <Text id="3">Current: {this.state.num} Last string</Text>
+                    ({index:index}) => {
+                      this.setState({num: index})
+                    }}>
+          {elements}
         </SwipeSelector>
-
       </View>
     );
   }

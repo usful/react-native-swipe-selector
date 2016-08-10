@@ -3,7 +3,7 @@
 import React from 'react';
 import { calculateInterpolationMap, calculate2DInterpolationMap, interpolationWindow} from './calculateInterpolationMap'
 import uuid from 'uuid';
-import {Animated, StyleSheet} from 'react-native';
+import {Animated, Easing, StyleSheet} from 'react-native';
 
 const styles = StyleSheet.create({
   itemViewStyle: {
@@ -210,29 +210,35 @@ class EncasedView {
     return this._viewComponent;
   }
 
-  shrink (duration = 1000) {
-    Animated.timing(
-      this._scaleMultiplier,
-      {
-        toValue: 0,
-        duration: duration,
-        easing: Easing.linear
-      }
-    )
+  shrink (cb, duration = 500) {
+    if (duration === 0)
+      this._scaleMultiplier.setValue(0);
+    else
+      Animated.timing(
+        this._scaleMultiplier,
+        {
+          toValue: 0,
+          duration: duration,
+          easing: Easing.linear
+        }
+      ).start( cb ? cb : null);
   }
 
-  restore (duration = 1000) {
-    Animated.timing(
-      this._scaleMultiplier,
-      {
-        toValue: 1,
-        duration: duration,
-        easing: Easing.linear
-      }
-    )
+  restore (cb, duration = 500) {
+    if (duration === 0)
+      this._scaleMultiplier.setValue(1);
+    else
+      Animated.timing(
+        this._scaleMultiplier,
+        {
+          toValue: 1,
+          duration: duration,
+          easing: Easing.linear
+        }
+      ).start( cb ? cb : null);
   }
 
-  transition (moveTo, duration = 1000) {
+  transition (moveTo, duration = 500) {
     let animations = [];
 
     let animSettings = {
