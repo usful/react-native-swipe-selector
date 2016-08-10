@@ -35,9 +35,9 @@ class ExampleSwipe extends Component {
       <View style={styles.container}>
         <SwipeSelector onChange={
                     ({index:index}) => this.setState({num: index})}>
-          <Text>{this.state.num} This is a string</Text>
-          <Text>{this.state.num} Perhaps another string?</Text>
-          <Text>{this.state.num} Last string</Text>
+          <Text id="1">Current: {this.state.num} This is a string</Text>
+          <Text id="2">Current: {this.state.num} Perhaps another string?</Text>
+          <Text id="3">Current: {this.state.num} Last string</Text>
         </SwipeSelector>
 
       </View>

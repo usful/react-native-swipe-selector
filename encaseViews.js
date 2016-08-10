@@ -48,8 +48,22 @@ class EncasedView {
     this._scale = new Animated.ValueXY({x: 0, y:0});
     this._opacity = new Animated.Value(0);
 
-    let componentPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
+    this._componentPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
 
+    this._key = uuid.v4();
+    this._component = component;
+    this._descriptor = descriptor;
+    this._descriptorDistance = descriptorDistance;
+    this._viewComponent = this._generateViewComponent();
+
+
+    this._index = index;
+    this._currentIndex = 0;
+    this._shownIndex = 0;
+    this._easing = easing;
+  }
+
+  _generateViewComponent () {
     // interpolated properties
     let transX;
     let transY;
@@ -85,11 +99,10 @@ class EncasedView {
       inputRange: this._descriptorOpacityMap.inputRange,
       outputRange: this._descriptorOpacityMap.opacity.outputRange
     });
-    let key = uuid.v4();
 
     let viewComponent = (
       <Animated.View
-        key={key}
+        key={this.key}
         style={[ styles.itemViewStyle,
           {
             transform : [
@@ -106,19 +119,19 @@ class EncasedView {
             {
               opacity: descOpa,
               transform: [
-                {translateY: Animated.add(componentPositionAdjustment.y, descriptorDistance)},
-                {translateX: componentPositionAdjustment.x}
+                {translateY: Animated.add(this._componentPositionAdjustment.y, this._descriptorDistance)},
+                {translateX: this._componentPositionAdjustment.x}
               ]
             }
           ]}
         >
-          { descriptor ? <Text style={{textAlign:'center'}}>{descriptor}</Text> : null}
+          { this.descriptor ? <Text style={{textAlign:'center'}}>{this.descriptor}</Text> : null}
         </Animated.View>
         <Animated.View
           onLayout={(e) => {
             // center the components
             let layout = e.nativeEvent.layout;
-            componentPositionAdjustment.setValue({x:0, y:(-layout.height/2-layout.y)})
+            this._componentPositionAdjustment.setValue({x:0, y:(-layout.height/2-layout.y)})
           }
           }
           style={[
@@ -126,25 +139,18 @@ class EncasedView {
               opacity: opa,
               alignItems: 'center', // centers along the x axis
               transform : [
-                {translateY: componentPositionAdjustment.y},
-                {translateX: componentPositionAdjustment.x}
+                {translateY: this._componentPositionAdjustment.y},
+                {translateX: this._componentPositionAdjustment.x}
               ]
             }
           ]}
         >
-          { component }
+          { this.component }
         </Animated.View>
       </Animated.View>
     );
 
-    this.component = component;
-    this.descriptor = descriptor;
-    this.viewComponent = viewComponent;
-
-    this._index = index;
-    this._currentIndex = 0;
-    this._shownIndex = 0;
-    this._easing = easing;
+    return viewComponent;
   }
 
   get locationState () {
@@ -164,6 +170,7 @@ class EncasedView {
     this._currentIndex = val;
     return val;
   }
+
   get shownIndex () {
     return this._shownIndex;
   }
@@ -174,8 +181,32 @@ class EncasedView {
     this._opacity.setValue(val);
     return val;
   }
+
   get index () {
     return this._index;
+  }
+  get key() {
+    return this._key;
+  }
+
+  get component () {
+    return this._component;
+  }
+  set component (val) {
+    this._component = val;
+    this._viewComponent = this._generateViewComponent();
+    return val;
+  }
+  get descriptor () {
+    return this._descriptor;
+  }
+  set descriptor (val) {
+    this._component = val;
+    this._viewComponent = this._generateViewComponent();
+    return val;
+  }
+  get viewComponent () {
+    return this._viewComponent;
   }
 
   transition (moveTo, duration = 1000) {
@@ -278,7 +309,6 @@ export default function encaseViews (state, items, descriptors) {
   let encasedItems = items.map( (component, index) => {
 
     let descriptor = ( descriptors && descriptors.length > index ? descriptors[index] : null );
-
 
     return new EncasedView(component, descriptor, state.descriptorDistance, index, state._easing, interpolationMaps);
   });

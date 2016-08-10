@@ -90,6 +90,7 @@ const _defaultScalingOptions = {
 
 const _defaultProps = {
   onChange: () => {},
+  defaultIndex: 0,
   descriptorDistance: 20,
   descriptorAbove: true,
   leftPoint: {x: -150, y: 25},
@@ -112,6 +113,15 @@ const _indexToPosition = function(currentIndex, itemIndex, maxIndex) {
   newIndex = ( (offset % maxIndex) + maxIndex ) % maxIndex ;
 
   return newIndex;
+};
+
+const _getUniqueKeySet = function (compArr) {
+  return new Set(compArr.map( e => e.props.id ).filter( e => e ));
+};
+
+const _checkUniqueKeys = function(objArr) {
+  let keys = _getUniqueKeySet(objArr);
+  return keys.size === objArr.length;
 };
 
 const styles = StyleSheet.create({
@@ -156,9 +166,14 @@ class SwipeSelector extends React.Component {
   };
 
   // TODO: move to outside the class
-  static propsToState(props, currentIndex = 0) {
+  static propsToState(props) {
 
     let children = React.Children.toArray(props.children);
+
+    //Check if unique keys are given
+    if (!_checkUniqueKeys(children)) {
+      console.warn('Child elements require unique keys to update. Lack of unique keys will force a full component update whenever there is a re-render');
+    }
 
     let shownCount = (props.hide) ? bound(children.length, {lower: 0, upper: props.show}) :  children.length;
     let hideCount = (props.hide) ? max(children.length-props.show, 0) : 0;
@@ -171,7 +186,7 @@ class SwipeSelector extends React.Component {
       descriptorAbove: props.descriptorAbove,
       leftPoint: props.leftPoint,
       rightPoint: props.rightPoint,
-      currentIndex: currentIndex,
+      currentIndex: props.defaultIndex,
       leftCount: Math.floor( ( shownCount -1 ) /2 ),
       rightCount: Math.ceil( ( shownCount -1 ) /2 ),
       hideCount: hideCount,
@@ -289,7 +304,6 @@ class SwipeSelector extends React.Component {
         let projection = displacement.clone().dot(this.state.unitVector);
         let increment = projection/this.state.scrollDistance;
 
-        let updateRequired = false;
         for (let item of this.state.children) {
           let newIndex;
           let offset = item.currentIndex + increment;
@@ -337,11 +351,53 @@ class SwipeSelector extends React.Component {
     this.expandItems();
   }
 
-  componentWillReceiveProps() {
+  componentWillReceiveProps(nextProps) {
+
+    let oldComponents = this.state.children;
+    let newComponents = [];
+    let oldChildren = React.Children.toArray(this.props.children);
+    let newChildren = React.Children.toArray(nextProps.children);
+
+    let oldUniqueKeys = _checkUniqueKeys(oldChildren);
+    let newUniqueKeys = _checkUniqueKeys(newChildren);
+
+    // non-unique or missing keys
+    if (!newUniqueKeys) {
+      console.warn('Child elements require unique keys to update. Lack of unique keys will force a full component update whenever there is a re-render');
+    }
+
+    // If this is a simple update
+    // Need to check that both keys are internally fully defined and unique
+    //  AND that the children are overlapping perfectly in the same order
+    if (oldUniqueKeys
+          && newUniqueKeys
+          && oldChildren.length === newChildren.length
+          && oldChildren.every( (child, ix) => child.props.id === newChildren[ix].props.id)) {
+
+      newComponents = oldComponents.map( (comp, ix) => { comp.component = newChildren[ix]; return comp;});
+      this.setState({children: newComponents});
+    }
+    // otherwise we need to contract the selector, swap the components, and then reinitialize the selector
+    else {
+      this.setState(SwipeSelector.propsToState(nextProps));
+    }
+
+
+    return;
+
+
+    // newChildren.forEach( child => {
+    //   if (child.props.key)
+    //     let oldComponent = oldComponents.find( comp => comp.component.key)
+    // });
+    //
+    // this.setState({children: newComponents});
+
+
 
   }
 
-  shouldComponentUpdate() {
+  shouldComponentUpdate(nextProps, nextState) {
     return true;
   }
 
