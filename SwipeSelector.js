@@ -135,11 +135,8 @@ const styles = StyleSheet.create({
 });
 
 class SwipeSelector extends React.Component {
-  //TODO: Tracking Scrolling
   //TODO: Flicking
   //TODO: Hidden Arm
-  //TODO: Non-static collections (collect and create)
-  //TODO: Use the children properties
   //TODO: Dynamically resize view to fit components?
 
   // Static class props
