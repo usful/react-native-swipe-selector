@@ -3,12 +3,13 @@
 import React from 'react';
 import { calculateInterpolationMap, calculate2DInterpolationMap, interpolationWindow} from './calculateInterpolationMap'
 import uuid from 'uuid';
-import {Animated, Easing, StyleSheet} from 'react-native';
+import {Animated, Easing, StyleSheet, Text} from 'react-native';
 
 const styles = StyleSheet.create({
   itemViewStyle: {
-    height: 0,
-    position:'relative'
+    position: 'absolute',
+    top: 0,
+    left: 0
   }
 });
 
@@ -38,7 +39,7 @@ const _prepBounds = function (centerVal, leftVal, rightVal, padLeft, padRight,
 };
 
 class EncasedView {
-  constructor (component, descriptor, descriptorDistance, index, easing, interpolationMaps){
+  constructor (component, descriptor, descriptorDistance, index, easing, interpolationMaps, centrePoint){
 
     this._locationMap = interpolationMaps.location;
     this._scaleMap = interpolationMaps.scale;
@@ -49,7 +50,11 @@ class EncasedView {
     this._scaleMultiplier = new Animated.Value(1);
     this._opacity = new Animated.Value(0);
 
-    this._componentPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
+    this._globalPositionAdjustment = centrePoint;
+    this._mainPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
+    this._componentHeight = new Animated.Value(0);
+    this._descriptorHeight = new Animated.Value(0);
+    this._descriptorDistanceHeight = new Animated.Value(0);
 
     this._key = uuid.v4();
     this._component = component;
@@ -104,11 +109,16 @@ class EncasedView {
     let viewComponent = (
       <Animated.View
         key={this.key}
+        onLayout={ ({nativeEvent: {layout : {width: width, height: height}}}) => {
+          this._mainPositionAdjustment.x.setValue(-(width/2));
+          this._mainPositionAdjustment.y.setValue(-(height/2));
+        }}
         style={[ styles.itemViewStyle,
           {
+            height: Animated.add(this._componentHeight, Animated.add(this._descriptorDistanceHeight, this._descriptorHeight)),
             transform : [
-              {translateX: transX},
-              {translateY: transY},
+              {translateX: Animated.add(transX, Animated.add(this._mainPositionAdjustment.x, this._globalPositionAdjustment.x))},
+              {translateY: Animated.add(transY, Animated.add(this._mainPositionAdjustment.y, this._globalPositionAdjustment.y))},
               {scaleX: Animated.multiply(scaleX, this._scaleMultiplier)},
               {scaleY: Animated.multiply(scaleY, this._scaleMultiplier)}
             ]
@@ -116,32 +126,27 @@ class EncasedView {
         ]}
       >
         <Animated.View
+          onLayout={ ({nativeEvent: {layout : {width: width, height: height}}}) => {
+            this._descriptorHeight.setValue(height);
+            this._descriptorDistanceHeight.setValue((height > 0 ? this._descriptorDistance : 0));
+          }}
           style={[
             {
               opacity: descOpa,
-              transform: [
-                {translateY: Animated.add(this._componentPositionAdjustment.y, this._descriptorDistance)},
-                {translateX: this._componentPositionAdjustment.x}
-              ]
             }
           ]}
         >
           { this.descriptor ? <Text style={{textAlign:'center'}}>{this.descriptor}</Text> : null}
         </Animated.View>
         <Animated.View
-          onLayout={(e) => {
-            // center the components
-            let layout = e.nativeEvent.layout;
-            this._componentPositionAdjustment.setValue({x:0, y:(-layout.height/2-layout.y)})
-          }
-          }
+          onLayout={ ({nativeEvent: {layout : {width: width, height: height}}}) => {
+            this._componentHeight.setValue(height);
+          }}
           style={[
             {
               opacity: opa,
-              alignItems: 'center', // centers along the x axis
               transform : [
-                {translateY: this._componentPositionAdjustment.y},
-                {translateX: this._componentPositionAdjustment.x}
+                {translateY: this._descriptorDistanceHeight}
               ]
             }
           ]}
@@ -238,7 +243,7 @@ class EncasedView {
       ).start( cb ? cb : null);
   }
 
-  transition (moveTo, duration = 500) {
+  transitionAnimation (moveTo, duration = 500) {
     let animations = [];
 
     let animSettings = {
@@ -262,7 +267,7 @@ class EncasedView {
   }
 }
 
-export default function encaseViews (state, children, descriptors) {
+export default function encaseViews (state, children, descriptors, centrePoint = {x:0, y:0}) {
 
   if (!Array.isArray(children)) children = [children];
 
@@ -339,7 +344,7 @@ export default function encaseViews (state, children, descriptors) {
 
     let descriptor = ( descriptors && descriptors.length > index ? descriptors[index] : null );
 
-    return new EncasedView(component, descriptor, state.descriptorDistance, index, state._easing, interpolationMaps);
+    return new EncasedView(component, descriptor, state.descriptorDistance, index, state._easing, interpolationMaps, centrePoint);
   });
 
   return encasedItems;
