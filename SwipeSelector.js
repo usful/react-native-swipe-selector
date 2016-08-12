@@ -225,7 +225,7 @@ class SwipeSelector extends React.Component {
     this._centrePoint = new Animated.ValueXY({x: 0, y: 0});
     this.state = SwipeSelector.propsToState(props, true, this._centrePoint);
 
-    this.panResponder = PanResponder.create({
+    this._panResponder = PanResponder.create({
       onStartShouldSetPanResponderCapture: (e, gestureState) => {
         // TODO: block touches to non-current index components
         return false;
@@ -544,7 +544,7 @@ class SwipeSelector extends React.Component {
 
     return (
       <View
-        { ...this.panResponder.panHandlers }
+        { ...this._panResponder.panHandlers }
         onLayout={
           ({nativeEvent: {layout: {width: width, height: height}}}) => {
             this._centrePoint.setValue({

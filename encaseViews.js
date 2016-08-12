@@ -3,7 +3,7 @@
 import React from 'react';
 import { calculateInterpolationMap, calculate2DInterpolationMap, interpolationWindow} from './calculateInterpolationMap'
 import uuid from 'uuid';
-import {Animated, Easing, StyleSheet, Text} from 'react-native';
+import {Animated, Easing, PanResponder, StyleSheet, Text} from 'react-native';
 
 const styles = StyleSheet.create({
   itemViewStyle: {
@@ -49,6 +49,89 @@ class EncasedView {
     this._scale = new Animated.ValueXY({x: 0, y:0});
     this._scaleMultiplier = new Animated.Value(1);
     this._opacity = new Animated.Value(0);
+
+    this._tapStore = {
+      height: 0,
+      width: 0,
+      pageLocationStart: { x:0, y:0 },
+      locationStart: { x:0, y:0 }
+    };
+    this._panResponder = PanResponder.create({
+      onStartShouldSetPanResponderCapture: (e, gestureState) => {
+        // Should grab the responder if it's not the current responder
+        return (this.currentIndex !== 0);
+      },
+
+      onMoveShouldSetPanResponderCapture: (e, gestureState) => {
+        return false;
+      },
+
+      onStartShouldSetPanResponder: (e, gestureState) => {
+        // If the event is starting in the component and it bubbles up, grab it
+        return false;
+      },
+
+      onMoveShouldSetPanResponder: (e, gestureState) => {
+        // Should not grab if interacting with something else
+        return false;
+      },
+
+      onPanResponderGrant: (e, gestureState) => {
+        // Do nothing, setup code is in onPanResponderStart
+      },
+
+      onPanResponderReject: (e, gestureState) => {
+        // Do nothing
+      },
+
+      onPanResponderStart: (e, gestureState) => {
+        this._tapStore.pageLocationStart = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+        this._tapStore.locationStart = { x: e.nativeEvent.locationX, y: e.nativeEvent.locationY };
+      },
+
+      onPanResponderEnd: (e, gestureState) => {
+        // Check if you're still in the box, if you're still in the box, transition to it.
+
+        // locationX and locationY does not update properly in Android
+        //  need to calculate the final location of the touch manually
+
+        let finalLocation = {
+          x: this._tapStore.locationStart.x + ( e.nativeEvent.pageX - this._tapStore.pageLocationStart.x ),
+          y: this._tapStore.locationStart.y + ( e.nativeEvent.pageY - this._tapStore.pageLocationStart.y )
+        };
+
+        if (finalLocation.x < 0
+          || finalLocation.y < 0
+          || finalLocation.x > this._tapStore.width
+          || finalLocation.y > this._tapStore.height
+        ) {
+          // Tap was cancelled by moving out of the target component, do nothing
+          return;
+        }
+        else {
+          ;//console.log('inside tap');
+        }
+      },
+
+      onPanResponderMove: (e, gestureState) => {
+        // Do Nothing
+
+      },
+
+      onPanResponderTerminationRequest: (e, gestureState) => {
+        return false; // DO NOT RELEASE THE RESPONDER UNTIL WE ARE DONE
+      },
+
+      onPanResponderTerminate: (e, gestureState) => {
+        // Do nothing
+      }
+    });
+    this._tapStore = {
+      height: 0,
+      width: 0,
+      pageLocationStart: { x:0, y:0 },
+      locationStart: { x:0, y:0 }
+    };
 
     this._globalPositionAdjustment = centrePoint;
     this._mainPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
@@ -108,10 +191,13 @@ class EncasedView {
 
     let viewComponent = (
       <Animated.View
+        { ...this._panResponder.panHandlers }
         key={this.key}
         onLayout={ ({nativeEvent: {layout : {width: width, height: height}}}) => {
           this._mainPositionAdjustment.x.setValue(-(width/2));
           this._mainPositionAdjustment.y.setValue(-(height/2));
+          this._tapStore.height = height;
+          this._tapStore.width = width;
         }}
         style={[ styles.itemViewStyle,
           {

@@ -44,7 +44,6 @@ export default class ExampleSwipe extends Component {
           ({index:index}) => {
             this.setState({num: index})
           }}
-          style={{height:400}}
         >
           {elements}
         </SwipeSelector>
@@ -52,7 +51,6 @@ export default class ExampleSwipe extends Component {
           ({index:index}) => {
             this.setState({num: index})
           }}
-          style={{height:400}}
         >
           {elements}
         </SwipeSelector>
