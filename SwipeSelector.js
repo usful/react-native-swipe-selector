@@ -264,42 +264,7 @@ class SwipeSelector extends React.Component {
 
       onPanResponderEnd: (e, gestureState) => {
         // TODO: release all resources used
-        // Gesture displacement vector
-        let displacement = Vector.fromObject({x: gestureState.dx, y: gestureState.dy});
-        // Displacement vector projection to find distance travelled along scrolling axis
-        let projection = displacement.clone().dot(this.state.unitVector);
-        // How many indices have been traversed based on the given projection
-        let increment = projection/this.state.scrollDistance;
-
-        let animations = [];
-        for (let item of this.state.children) {
-          let newIndex;
-          if (increment > 0)
-            newIndex = (item.currentIndex + increment ) % (this.state.children.length);
-          else
-            newIndex = (item.currentIndex + increment + this.state.children.length) % (this.state.children.length);
-
-          newIndex = Math.round(newIndex);
-          animations.push( item.transitionAnimation( newIndex, 150 ) );
-        }
-
-        Animated.parallel(animations).start( ({finished: finished}) => {
-
-          if (!finished) return;
-
-          // Set the currentIndexes
-          for (let item of this.state.children) {
-            let newIndex;
-            let offset = item.currentIndex + increment;
-            let length = this.state.children.length;
-
-            // This double modulo is to deal with negative direction amounts
-            newIndex = ( (offset % length) + length) % length ;
-
-            newIndex = Math.round(newIndex) % this.state.children.length;
-            item.currentIndex = newIndex;
-          }
-        });
+        this.transitionTo(this.currentIndex, null, 150);
       },
 
       onPanResponderMove: (e, gestureState) => {
@@ -508,7 +473,7 @@ class SwipeSelector extends React.Component {
     if (finalIndex%1 !== 0)
       throw new Error(`Integer argument expected, received ${finalIndex} instead`);
 
-    if (finalIndex > this.state.totalCount - 1)
+    if (finalIndex > this.state.totalCount - 1 || finalIndex < 0)
       throw new Error(`Transition destination ${finalIndex} out of bounds`);
 
     let currentIndex = this.currentIndex;
@@ -541,7 +506,11 @@ class SwipeSelector extends React.Component {
 
     // For the special case of resetting to the current index
     if (distance === 0) {
-      this._transitionAnimation(this.currentIndex, cb, duration)
+      // Need to determine if this is resolving with a right or left rotation
+      let currentElement = this.state.children[this.currentIndex];
+      let finalIndex = Math.round(currentElement.shownIndex);
+
+      this._transitionAnimation(this.currentIndex, duration, finalIndex > 0 )
             .start( ({finished: finished}) => {
               if (!finished) return;
 
@@ -574,32 +543,37 @@ class SwipeSelector extends React.Component {
       //   (transition from n+1 -> 0 for an array of n items)
       let currentAnimation = 0;
       let handleAnimFinish = ({finished: finished}) => {
-          if (!finished) return;
+        if (!finished) return;
 
-          // Update the frontmost element for the next animation
-          this.state.children[transitionalIndexes[currentAnimation]].shownIndex = ( rotRight ? 0 : this.state.totalCount );
+        // Update the frontmost element for the next animation
+        this.state.children[transitionalIndexes[currentAnimation]].shownIndex = ( rotRight ? 0 : this.state.totalCount );
 
-          // Done traversing
-          if (currentAnimation === animations.length-1) {
-            let finalSelectedIndex = transitionalIndexes[currentAnimation];
-            this.state.children[finalSelectedIndex].shownIndex = this.state.totalCount;
-            // update all current indexes of all children
-            let finalIndexes = [
-                                  ...circularize(
-                                    [ ...range(0, this.state.totalCount)],
-                                    finalSelectedIndex,
-                                    true)
-                                ];
-            finalIndexes.forEach( (e, ix) => {this.state.children[e].currentIndex = ix} );
+        let currentSelectedIndex = transitionalIndexes[currentAnimation];
 
-            this.currentIndex = transitionalIndexes[currentAnimation];
-            if (cb) cb();
-          }
-          else {
-            currentAnimation++;
-            animations[currentAnimation].start( handleAnimFinish );
-          }
-        };
+        // update all current indexes of all children
+        let currentIndexes = [
+          ...circularize(
+            [ ...range(0, this.state.totalCount)],
+            currentSelectedIndex,
+            true)
+        ];
+        currentIndexes.forEach( (e, ix) => {
+                                            this.state.children[e].currentIndex = ix;
+                                            this.state.children[e].shownIndex = ix;
+                              });
+
+        // Done traversing
+        if (currentAnimation === animations.length-1) {
+          this.state.children[currentSelectedIndex].shownIndex = this.state.totalCount;
+
+          this.currentIndex = transitionalIndexes[currentAnimation];
+          if (cb) cb();
+        }
+        else {
+          currentAnimation++;
+          animations[currentAnimation].start( handleAnimFinish );
+        }
+      };
 
       animations[0].start( handleAnimFinish );
 
