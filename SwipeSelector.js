@@ -163,7 +163,7 @@ class SwipeSelector extends React.Component {
   };
 
   // TODO: move to outside the class
-  static propsToState(props, createViewComponents = true, centrePoint = {x: 0, y:0}) {
+  static propsToState(props, createViewComponents = true, centrePoint = {x: 0, y:0}, onTap) {
 
     let children = React.Children.toArray(props.children);
     let descriptors = children.map( el => ( el.props.descriptor || '' ));
@@ -214,7 +214,7 @@ class SwipeSelector extends React.Component {
     }
 
     if (createViewComponents) {
-      state.children = encaseViews(state, children, descriptors, centrePoint);
+      state.children = encaseViews(state, children, descriptors, centrePoint, onTap);
     }
 
     return state;
@@ -224,11 +224,10 @@ class SwipeSelector extends React.Component {
     super(props) ;
 
     this._centrePoint = new Animated.ValueXY({x: 0, y: 0});
-    this.state = SwipeSelector.propsToState(props, true, this._centrePoint);
+    this.state = SwipeSelector.propsToState(props, true, this._centrePoint, this._onTap.bind(this));
 
     this._panResponder = PanResponder.create({
       onStartShouldSetPanResponderCapture: (e, gestureState) => {
-        // TODO: block touches to non-current index components
         return false;
       },
 
@@ -243,7 +242,7 @@ class SwipeSelector extends React.Component {
 
       onMoveShouldSetPanResponder: (e, gestureState) => {
         // TODO: have a negative hitslop, so can grab from child elements if required
-        return false; // Should not grab if interacting with something else
+        return true; // Should not grab if interacting with something else
       },
 
       onPanResponderGrant: (e, gestureState) => {
@@ -290,7 +289,6 @@ class SwipeSelector extends React.Component {
             this.currentIndex = item.index;
 
           item.shownIndex = newIndex ;
-          item.currentIndex = Math.round(newIndex) % length;
 
         }
 
@@ -340,11 +338,10 @@ class SwipeSelector extends React.Component {
     // Is this a refresh
     if (!deepCompare(this.state, newState, ['children', 'descriptors', 'currentIndex'])) {
       // full refresh, so may as well regenerate the entire state object
-      newState = SwipeSelector.propsToState(nextProps, true, this._centrePoint);
+      newState = SwipeSelector.propsToState(nextProps, true, this._centrePoint, this._onTap.bind(this));
       Animated.parallel(newState.children.map( e => e.shrink(0))).start();
       this.nextState = newState;
       this.shrinkItems( () => {
-
         this.setState(this.nextState, () => {
           this.restoreItems();
           this.expandItems();
@@ -377,7 +374,7 @@ class SwipeSelector extends React.Component {
       }
       else {
         // This is a change of children
-        newState = SwipeSelector.propsToState(nextProps, true, this._centrePoint);
+        newState = SwipeSelector.propsToState(nextProps, true, this._centrePoint, this._onTap.bind(this));
         Animated.parallel(newState.children.map( e => e.shrink(0))).start();
         this.nextState = newState;
         this.shrinkItems(() => {
@@ -396,6 +393,10 @@ class SwipeSelector extends React.Component {
 
   shouldComponentUpdate(nextProps, nextState) {
     return true;
+  }
+
+  _onTap(viewComponent) {
+    this.transitionTo(viewComponent.index, null, 250);
   }
 
   expandItems(cb) {
@@ -542,6 +543,9 @@ class SwipeSelector extends React.Component {
                                   .map( offset => ( ( (this.currentIndex + offset ) % this.state.totalCount ) + this.state.totalCount ) % this.state.totalCount );
       let animations = transitionalIndexes
         .map( (destIndex, ix) => this._transitionAnimation(destIndex, intervals[ix], rotRight) );
+
+      // Put the foremost child at the right index for animation
+      this.state.children[this.currentIndex].shownIndex = ( rotRight ? 0 : this.state.totalCount );
 
       // Each animation needs to be manually handled so that the child shownIndex is set properly when an item wraps
       //   (transition from n+1 -> 0 for an array of n items)

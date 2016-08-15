@@ -39,7 +39,7 @@ const _prepBounds = function (centerVal, leftVal, rightVal, padLeft, padRight,
 };
 
 class EncasedView {
-  constructor (component, descriptor, descriptorDistance, index, easing, interpolationMaps, centrePoint){
+  constructor (component, descriptor, descriptorDistance, index, easing, interpolationMaps, centrePoint, onTap){
 
     this._locationMap = interpolationMaps.location;
     this._scaleMap = interpolationMaps.scale;
@@ -50,16 +50,12 @@ class EncasedView {
     this._scaleMultiplier = new Animated.Value(1);
     this._opacity = new Animated.Value(0);
 
-    this._tapStore = {
-      height: 0,
-      width: 0,
-      pageLocationStart: { x:0, y:0 },
-      locationStart: { x:0, y:0 }
-    };
+    this._onTap = onTap;
+
     this._panResponder = PanResponder.create({
       onStartShouldSetPanResponderCapture: (e, gestureState) => {
         // Should grab the responder if it's not the current responder
-        return false;//(this.currentIndex !== 0);
+        return (this.currentIndex !== 0);
       },
 
       onMoveShouldSetPanResponderCapture: (e, gestureState) => {
@@ -85,32 +81,13 @@ class EncasedView {
       },
 
       onPanResponderStart: (e, gestureState) => {
-        this._tapStore.pageLocationStart = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
-        this._tapStore.locationStart = { x: e.nativeEvent.locationX, y: e.nativeEvent.locationY };
+        // Do nothing
       },
 
       onPanResponderEnd: (e, gestureState) => {
-        // Check if you're still in the box, if you're still in the box, transition to it.
-
-        // locationX and locationY does not update properly in Android
-        //  need to calculate the final location of the touch manually
-
-        let finalLocation = {
-          x: this._tapStore.locationStart.x + ( e.nativeEvent.pageX - this._tapStore.pageLocationStart.x ),
-          y: this._tapStore.locationStart.y + ( e.nativeEvent.pageY - this._tapStore.pageLocationStart.y )
-        };
-
-        if (finalLocation.x < 0
-          || finalLocation.y < 0
-          || finalLocation.x > this._tapStore.width
-          || finalLocation.y > this._tapStore.height
-        ) {
-          // Tap was cancelled by moving out of the target component, do nothing
-          return;
-        }
-        else {
-          ;//console.log('inside tap');
-        }
+        // If control is still here, then the parent view never took it away
+        // Successful tap
+        if (this._onTap) this._onTap(this);
       },
 
       onPanResponderMove: (e, gestureState) => {
@@ -118,9 +95,9 @@ class EncasedView {
 
       },
 
-      onPanResponderTerminationRequest: (e, gestureState) => {
-        // TODO: Release the responder if we've moved more than 5 px (box) away from initial location
-        return false; // DO NOT RELEASE THE RESPONDER UNTIL WE ARE DONE
+      onPanResponderTerminationRequest: (e, {dx: dx, dy: dy}) => {
+        // Release the responder if we've moved more than 5 px (box) away from initial location
+        return (Math.abs(dx) > 5 || Math.abs(dy) > 5);
       },
 
       onPanResponderTerminate: (e, gestureState) => {
@@ -344,7 +321,7 @@ class EncasedView {
 
 }
 
-export default function encaseViews (state, children, descriptors, centrePoint = {x:0, y:0}) {
+export default function encaseViews (state, children, descriptors, centrePoint = {x:0, y:0}, onTap) {
 
   if (!Array.isArray(children)) children = [children];
 
@@ -421,7 +398,7 @@ export default function encaseViews (state, children, descriptors, centrePoint =
 
     let descriptor = ( descriptors && descriptors.length > index ? descriptors[index] : null );
 
-    return new EncasedView(component, descriptor, state.descriptorDistance, index, state._easing, interpolationMaps, centrePoint);
+    return new EncasedView(component, descriptor, state.descriptorDistance, index, state._easing, interpolationMaps, centrePoint, onTap);
   });
 
   return encasedItems;
