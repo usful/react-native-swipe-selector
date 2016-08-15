@@ -333,7 +333,6 @@ class EncasedView {
     let animations = [];
 
     let animSettings = {
-      fromValue: this.currentIndex,
       toValue: moveTo,
       duration: duration,
       easing: this._easing
@@ -348,9 +347,6 @@ class EncasedView {
     return Animated.parallel(animations);
   }
 
-  transitionTemp (moveTo) {
-    this.shownIndex = moveTo;
-  }
 }
 
 export default function encaseViews (state, children, descriptors, centrePoint = {x:0, y:0}) {

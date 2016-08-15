@@ -187,6 +187,7 @@ class SwipeSelector extends React.Component {
       leftCount: Math.floor( ( shownCount -1 ) /2 ),
       rightCount: Math.ceil( ( shownCount -1 ) /2 ),
       hideCount: hideCount,
+      totalCount: children.length,
       unitVector: null, // resolved to a value below
       scrollDistance: 0, // resolved to a value below
       easing: props.easing,
@@ -263,9 +264,11 @@ class SwipeSelector extends React.Component {
 
       onPanResponderEnd: (e, gestureState) => {
         // TODO: release all resources used
+        // Gesture displacement vector
         let displacement = Vector.fromObject({x: gestureState.dx, y: gestureState.dy});
-
+        // Displacement vector projection to find distance travelled along scrolling axis
         let projection = displacement.clone().dot(this.state.unitVector);
+        // How many indices have been traversed based on the given projection
         let increment = projection/this.state.scrollDistance;
 
         let animations = [];
@@ -301,8 +304,11 @@ class SwipeSelector extends React.Component {
 
       onPanResponderMove: (e, gestureState) => {
         // TODO: Do the flicking thing
+        // Gesture displacement vector
         let displacement = Vector.fromObject({x: gestureState.dx, y: gestureState.dy});
+        // Displacement vector projection to find distance travelled along scrolling axis
         let projection = displacement.clone().dot(this.state.unitVector);
+        // How many indices have been traversed based on the given projection
         let increment = projection/this.state.scrollDistance;
 
         for (let item of this.state.children) {
@@ -317,7 +323,7 @@ class SwipeSelector extends React.Component {
           if ( ( Math.round(newIndex) < 1 || Math.round(newIndex) === length ) && this.currentIndex !== item.index)
             this.currentIndex = item.index;
 
-          item.transitionTemp( newIndex );
+          item.shownIndex = newIndex ;
 
         }
 
@@ -477,19 +483,163 @@ class SwipeSelector extends React.Component {
 
   }
 
-  restoreItems(cb, duration = 1000) {
+  restoreItems(cb, duration = 500) {
     this.state.children.forEach( child => {
       child.restore(cb, duration);
     });
   }
 
-  shrinkItems(cb, duration = 1000) {
+  shrinkItems(cb, duration = 500) {
     this.state.children.forEach( child => {
       child.shrink(cb, duration);
     });
   }
 
+  /**
+   * Transitions to a targeted index over a given duration
+   * Will do no more than half a rotation to reach its destination
+   * @param {number} finalIndex
+   * @param {function} [cb] Callback function executed at the end of the transition (if successful)
+   * @param {number} [duration=1000]
+   */
+  transitionTo (finalIndex, cb, duration = 1000) {
 
+    // naive check for integer argument
+    if (finalIndex%1 !== 0)
+      throw new Error(`Integer argument expected, received ${finalIndex} instead`);
+
+    if (finalIndex > this.state.totalCount - 1)
+      throw new Error(`Transition destination ${finalIndex} out of bounds`);
+
+    let currentIndex = this.currentIndex;
+    // Reorient the frame of reference to treat the current index as 0
+    let dest = ( ( (finalIndex + this.state.totalCount) - currentIndex ) % this.state.totalCount );
+
+    let offset = (this.state.totalCount/2) - dest;
+
+    // The sign of the offset indicates whether it should be a positive (right) transition
+    //  or a negative (left) transition. The default value forces a right direction transition
+    //  when moving to the exact opposite location on the circle
+    // The amount of the offset indicates how far in that direction it should go
+    let distance = Math.sign( offset || 1 )*( (this.state.totalCount/2) - Math.abs(offset) );
+
+    this.transition(distance, cb, duration);
+
+  }
+
+  /**
+   * Rotates a certain distance over a given duration
+   * @param {number} distance The amount of steps to take, sign indicates direction (positive - right, negative - left)
+   * @param {function} [cb] Callback function executed at the end of the transition (if successful)
+   * @param {number} [duration=1000]
+   */
+  transition (distance, cb, duration = 1000) {
+
+    // naive check for integer argument
+    if (distance%1 !== 0)
+      throw new Error(`Integer argument expected, received ${distance} instead`);
+
+    // For the special case of resetting to the current index
+    if (distance === 0) {
+      this._transitionAnimation(this.currentIndex, cb, duration)
+            .start( ({finished: finished}) => {
+              if (!finished) return;
+
+              if (cb) cb();
+            });
+    }
+    else {
+      let rotRight = Math.sign(distance) < 0; // if it's a negative distance that means we're moving items to the right
+      // Using a logarithmic timing curve
+      // TODO: Make this a configurable property
+      let scale = scaleLogarithmic(
+                                {start: 0, end: distance},
+                                {start: 0, end: duration}
+                              );
+
+      // The list of first differences of the timed points gives the interval durations for each individual transition
+      let intervals = [ ...range(0, distance + Math.sign(distance), Math.sign(distance)) ]
+                        .map( e => scale(e) )
+                        .map( (e, ix, arr) => (ix === 0) ? e : e-arr[ix-1])
+                        .slice(1);
+
+      // Generate a list of animations, each animation is itself a composite animation of all children moving to their
+      //  final location for that transition
+      let transitionalIndexes = [ ...range(Math.sign(distance), distance + Math.sign(distance), Math.sign(distance)) ]
+                                  .map( offset => ( ( (this.currentIndex + offset ) % this.state.totalCount ) + this.state.totalCount ) % this.state.totalCount );
+      let animations = transitionalIndexes
+        .map( (destIndex, ix) => this._transitionAnimation(destIndex, intervals[ix], rotRight) );
+
+      // Each animation needs to be manually handled so that the child shownIndex is set properly when an item wraps
+      //   (transition from n+1 -> 0 for an array of n items)
+      let currentAnimation = 0;
+      let handleAnimFinish = ({finished: finished}) => {
+          if (!finished) return;
+
+          // Update the frontmost element for the next animation
+          this.state.children[transitionalIndexes[currentAnimation]].shownIndex = ( rotRight ? 0 : this.state.totalCount );
+
+          // Done traversing
+          if (currentAnimation === animations.length-1) {
+            let finalSelectedIndex = transitionalIndexes[currentAnimation];
+            this.state.children[finalSelectedIndex].shownIndex = this.state.totalCount;
+            // update all current indexes of all children
+            let finalIndexes = [
+                                  ...circularize(
+                                    [ ...range(0, this.state.totalCount)],
+                                    finalSelectedIndex,
+                                    true)
+                                ];
+            finalIndexes.forEach( (e, ix) => {this.state.children[e].currentIndex = ix} );
+
+            this.currentIndex = transitionalIndexes[currentAnimation];
+            if (cb) cb();
+          }
+          else {
+            currentAnimation++;
+            animations[currentAnimation].start( handleAnimFinish );
+          }
+        };
+
+      animations[0].start( handleAnimFinish );
+
+    }
+  }
+
+  /**
+   * Generates a composite animation that moves all elements to their final location from their current location
+   * @param {number} nextIndex
+   * @param {number} [duration=1000]
+   * @param {boolean} [rotRight=false] Whether the transition is rotating to the right or rotating to the left
+   * @returns {*} An uninitiated composite animation
+   * @private
+   */
+  _transitionAnimation (nextIndex, duration = 1000, rotRight = false) {
+
+    // naive check for integer argument
+    if (nextIndex%1 !== 0)
+      throw new Error(`Integer argument expected, received ${nextIndex} instead`);
+
+    let animations = [
+                        ...circularize(
+                                        [ ...range(0, this.state.totalCount) ],
+                                        nextIndex,
+                                        true
+                        )
+                     ]
+                      .map( (e, ix) =>
+                                this.state.children[e]
+                                  .transitionAnimation(
+                                                        // if this is a rotation to the right
+                                                        //  the 0 state is actually the n+1 state
+                                                        ( ix === 0 && rotRight ? this.state.totalCount : ix ),
+                                                        duration
+                                                      )
+                          );
+
+    return Animated.parallel(animations);
+
+  }
 
   _collateItems(items, currentIndex = 0) {
     //collate items and prepare for rendering
@@ -557,7 +707,7 @@ class SwipeSelector extends React.Component {
         style={[this.props.style, { flex: 1, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center'}]}
       >
         {items}
-        <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {this.state.children.forEach(e => e.shrink());} }><Text>DEBUG</Text></TouchableOpacity>
+        <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {this.transitionTo(3)} }><Text>DEBUG</Text></TouchableOpacity>
       </View>
 
     );

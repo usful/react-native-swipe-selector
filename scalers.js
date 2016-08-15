@@ -25,7 +25,7 @@ function scaleLinear(inputRange, outputRange) {
  * Returns a logarithmic scaling function, maps a linear to a logarithmic scale
  * @param inputRange {{start: number, end: number }}
  * @param outputRange {{start:number, end:number }}
- * @param depth {number = 1} How many times to apply the scaling
+ * @param {number} [depth=1] How many times to apply the scaling
  * @returns { function } Scaled mapping function
  * @private
  */

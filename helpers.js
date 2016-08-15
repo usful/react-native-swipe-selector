@@ -1,4 +1,17 @@
 "use strict";
+
+/**
+ * Returns whether num exists on (bound1, bound2)
+ *  The order of bound1 and bound2 is irrelevant.
+ * @param {number} num
+ * @param {number} bound1
+ * @param {number} bound2
+ * @returns {boolean}
+ */
+function between (num, bound1, bound2) {
+  return Math.min(bound1, bound2) < num && num < Math.max(bound1, bound2);
+}
+
 /**
  * Returns a number bounded by an upper and lower value
  * @param {number} num
@@ -19,7 +32,8 @@ function bound (num, bounds){
 function* range (start, end, step = 1) {
 
   let current = start;
-  while (current < end) {
+  // The condition enables the use of range(1,2,1) or range (2,1,-1)
+  while (between(current, start, end) || (current === start && current !== end)) {
     yield current;
     current += step;
   }
@@ -116,4 +130,4 @@ function deepCompare (obj1, obj2, ignoreKeys = []){
   return true;
 }
 
-export {bound, range, circularize, deepCompare}
+export {between, bound, circularize, deepCompare, range}
