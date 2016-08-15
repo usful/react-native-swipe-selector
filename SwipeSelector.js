@@ -242,6 +242,7 @@ class SwipeSelector extends React.Component {
       },
 
       onMoveShouldSetPanResponder: (e, gestureState) => {
+        // TODO: have a negative hitslop, so can grab from child elements if required
         return false; // Should not grab if interacting with something else
       },
 
@@ -289,6 +290,7 @@ class SwipeSelector extends React.Component {
             this.currentIndex = item.index;
 
           item.shownIndex = newIndex ;
+          item.currentIndex = Math.round(newIndex) % length;
 
         }
 
@@ -457,7 +459,7 @@ class SwipeSelector extends React.Component {
     Animated.parallel(this.state.children.map( child => child.shrink(duration) )
     ).start( ({finished: finished}) => {
       if (!finished) return;
-      
+
       if (cb) cb();
     });
   }

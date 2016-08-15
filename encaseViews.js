@@ -119,6 +119,7 @@ class EncasedView {
       },
 
       onPanResponderTerminationRequest: (e, gestureState) => {
+        // TODO: Release the responder if we've moved more than 5 px (box) away from initial location
         return false; // DO NOT RELEASE THE RESPONDER UNTIL WE ARE DONE
       },
 
