@@ -59,7 +59,7 @@ class EncasedView {
     this._panResponder = PanResponder.create({
       onStartShouldSetPanResponderCapture: (e, gestureState) => {
         // Should grab the responder if it's not the current responder
-        return (this.currentIndex !== 0);
+        return false;//(this.currentIndex !== 0);
       },
 
       onMoveShouldSetPanResponderCapture: (e, gestureState) => {
@@ -301,32 +301,26 @@ class EncasedView {
     return this._viewComponent;
   }
 
-  shrink (cb, duration = 500) {
-    if (duration === 0)
-      this._scaleMultiplier.setValue(0);
-    else
-      Animated.timing(
-        this._scaleMultiplier,
-        {
-          toValue: 0,
-          duration: duration,
-          easing: Easing.linear
-        }
-      ).start( cb ? cb : null);
+  shrink (duration = 500) {
+    return Animated.timing(
+      this._scaleMultiplier,
+      {
+        toValue: 0,
+        duration: duration,
+        easing: Easing.linear
+      }
+    )
   }
 
-  restore (cb, duration = 500) {
-    if (duration === 0)
-      this._scaleMultiplier.setValue(1);
-    else
-      Animated.timing(
-        this._scaleMultiplier,
-        {
-          toValue: 1,
-          duration: duration,
-          easing: Easing.linear
-        }
-      ).start( cb ? cb : null);
+  restore (duration = 500) {
+    return Animated.timing(
+      this._scaleMultiplier,
+      {
+        toValue: 1,
+        duration: duration,
+        easing: Easing.linear
+      }
+    )
   }
 
   transitionAnimation (moveTo, duration = 500) {

@@ -339,17 +339,16 @@ class SwipeSelector extends React.Component {
     if (!deepCompare(this.state, newState, ['children', 'descriptors', 'currentIndex'])) {
       // full refresh, so may as well regenerate the entire state object
       newState = SwipeSelector.propsToState(nextProps, true, this._centrePoint);
-      newState.children.forEach( e => e.shrink(0));
+      Animated.parallel(newState.children.map( e => e.shrink(0))).start();
       this.nextState = newState;
-      this.shrinkItems( ({finished: finished}) => {
+      this.shrinkItems( () => {
 
-        if (!finished) return;
-
-        this.setState(newState, () => {
+        this.setState(this.nextState, () => {
           this.restoreItems();
           this.expandItems();
           this.currentIndex = this.currentIndex;
         })
+
       });
     }
     // Might have absolutely no changes, but can't say for sure
@@ -371,19 +370,16 @@ class SwipeSelector extends React.Component {
           return comp;
         });
 
-        this.nextState = null;
+        this.nextState = {};
         this.setState({children: newComponents});
       }
       else {
         // This is a change of children
         newState = SwipeSelector.propsToState(nextProps, true, this._centrePoint);
-        newState.children.forEach(e => e.shrink(0));
+        Animated.parallel(newState.children.map( e => e.shrink(0))).start();
         this.nextState = newState;
-        this.shrinkItems(({finished: finished}) => {
-
-          if (!finished) return;
-
-          this.setState(newState, () => {
+        this.shrinkItems(() => {
+          this.setState(this.nextState, () => {
             this.restoreItems();
             this.expandItems();
             this.currentIndex = this.currentIndex;
@@ -449,14 +445,20 @@ class SwipeSelector extends React.Component {
   }
 
   restoreItems(cb, duration = 500) {
-    this.state.children.forEach( child => {
-      child.restore(cb, duration);
+    Animated.parallel(this.state.children.map( child => child.restore(duration) )
+    ).start( ({finished: finished}) => {
+      if (!finished) return;
+
+      if (cb) cb();
     });
   }
 
   shrinkItems(cb, duration = 500) {
-    this.state.children.forEach( child => {
-      child.shrink(cb, duration);
+    Animated.parallel(this.state.children.map( child => child.shrink(duration) )
+    ).start( ({finished: finished}) => {
+      if (!finished) return;
+      
+      if (cb) cb();
     });
   }
 
