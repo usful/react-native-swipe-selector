@@ -14,8 +14,8 @@ function between (num, bound1, bound2) {
 
 /**
  * Returns a number bounded by an upper and lower value
- * @param {number} num
- * @param {{upper: number, lower: number}} bounds
+ * @param {number} num Number to bound
+ * @param {{upper: number, lower: number}} bounds Bounds to restrict the number
  * @returns {number}
  */
 function bound (num, bounds){
@@ -24,16 +24,26 @@ function bound (num, bounds){
 
 /**
  * Returns a generator that runs through [start, end) (non-inclusive) with an increment of size step (default of 1)
- * Similar to Python xrange function
- * @param {number} start the first number
- * @param {number} end
- * @param {number} [step=1]
+ * Similar to Python range. A negative incrementing range can be specified, but a negative step must be specified.
+ * @param {number} start The first number
+ * @param {number} end Returns up to but not including this number
+ * @param {number} [step=1] The difference between each number
  */
 function* range (start, end, step = 1) {
+  if (step === 0)
+    throw new Error (`range step argument cannot be 0`);
 
   let current = start;
   // The condition enables the use of range(1,2,1) or range (2,1,-1)
-  while (between(current, start, end) || (current === start && current !== end)) {
+  //  but not range (2, 1)
+  while (between(current, start, end)
+          || (
+              ( current === start && current !== end )
+              && ( start < end && step > 0
+                   || start > end && step < 0
+                 )
+             )
+    ) {
     yield current;
     current += step;
   }
@@ -44,9 +54,9 @@ function* range (start, end, step = 1) {
  * Wraps an array in a generator to emulate a circular array
  * Does not clone the array, only references the original array
  * It is advised that you do not alter the array while iterating over it.
- * @param {Array} array
- * @param {number} [currentIndex=0]
- * @param {boolean} [bounded=false]
+ * @param {Array} array The array to circularize
+ * @param {number} [currentIndex=0] The array index to return as the first value
+ * @param {boolean} [bounded=false] If true, the generator will only allow a single iteration
  */
 function* circularize (array, currentIndex = 0, bounded = false) {
   

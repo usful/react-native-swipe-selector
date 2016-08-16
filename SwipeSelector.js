@@ -4,14 +4,19 @@ import React from 'react';
 import { StyleSheet, Text, View, Animated, Easing, PanResponder, TouchableOpacity } from 'react-native';
 import { bound, range, circularize, deepCompare } from './helpers';
 import { scaleLinear, scaleLogarithmic, scaleSqrt } from './scalers'
-import encaseViews from './encaseViews';
+import encaseViews, { EncasedView } from './encaseViews';
 
-// CAUTION: Vector functions mutate
+// CAUTION: Vector functions mutate the original vector
 import Vector from 'victor';
 
 /**
+ * @name Vector
+ * @type { { x: number, y: number } }
+ */
+
+/**
  * Enumeration used to determine the scroll directions to be used for a SwipeSelector
- * @type {{}}
+ * @type {{ HORIZONTAL: Symbol, VERTICAL: Symbol, ADAPTIVE: Symbol, CUSTOM: Symbol }}
  * @private
  */
 const _scrollDirections = {
@@ -22,12 +27,12 @@ const _scrollDirections = {
 };
 
 /**
- *
+ * Converts a selected scroll direction option to the relevant unit vector
  * @param { SwipeSelector.scrollDirections } scrollDirection
- * @param { {x: number, y: number} } [leftPoint={x: -1, y:0}]
- * @param { {x: number, y: number} } [rightPoint={x: 1, y: 0}]
- * @param { {x: number, y: number} } [customVector={x: 1, y: 0}]
- * @returns {*}
+ * @param { Vector } [leftPoint={x: -1, y:0}]
+ * @param { Vector } [rightPoint={x: 1, y: 0}]
+ * @param { Vector } [customVector={x: 1, y: 0}]
+ * @returns { Vector }
  * @private
  */
 const _resolveScrollDirections = function(scrollDirection,
@@ -40,8 +45,10 @@ const _resolveScrollDirections = function(scrollDirection,
     case _scrollDirections.VERTICAL:
       return Vector.fromObject({x: 0, y: -1});
     case _scrollDirections.ADAPTIVE:
+      // This gives a vector that is perpindicular to the vector directly between the travelling paths
       let left = Vector.fromObject(fixPoints.leftPoint).norm();
       let right = Vector.fromObject(fixPoints.rightPoint).norm();
+      // TODO: instead of turning 90 degrees CW, it should turn 90 degrees towards the right point
       let axis = left.clone().add(right).rotateByDeg(-90).norm();
       return axis;
     case _scrollDirections.CUSTOM:
@@ -53,7 +60,7 @@ const _resolveScrollDirections = function(scrollDirection,
 
 /**
  * Enumeration used to determine the particular type of scaling for animation
- * @type {{}}
+ * @type {{ LINEAR: Symbol, LOGARITHMIC: Symbol, SQRT: Symbol }}
  * @private
  */
 const _scaling = {
@@ -62,6 +69,12 @@ const _scaling = {
   SQRT: Symbol('sqrt')
 };
 
+/**
+ * Converts a selected scaling option to the relevant function
+ * @param {SwipeSelector.scaling} scaling
+ * @returns {function}
+ * @private
+ */
 const _resolveScaling = function(scaling) {
   // Turns the option into a usable scaling function for the class
   switch (scaling) {
@@ -107,6 +120,15 @@ const _defaultProps = {
   unitVector: null
 };
 
+/**
+ * Converts an index to its position based on the currently selected index, and the total number of positions
+ * @param {number} currentIndex The currently selected index
+ * @param {number} itemIndex The index of the item to position
+ * @param {number} maxIndex The total number of positions in the list
+ * @returns {number}
+ * @private
+ */
+
 const _indexToPosition = function(currentIndex, itemIndex, maxIndex) {
   let newIndex;
   let offset = itemIndex - currentIndex;
@@ -115,13 +137,25 @@ const _indexToPosition = function(currentIndex, itemIndex, maxIndex) {
   return newIndex;
 };
 
+/**
+ * Returns a Set comprised of all the id props of the given array
+ * @param { [{props: {id: string} }] } compArr
+ * @returns {Set}
+ * @private
+ */
 const _getUniqueKeySet = function (compArr) {
   return new Set(compArr.map( e => e.props.id ).filter( e => e ));
 };
 
-const _checkUniqueIds = function(objArr) {
-  let keys = _getUniqueKeySet(objArr);
-  return keys.size === objArr.length;
+/**
+ * Determines whether the given array has unique ids in each individual set of properties
+ * @param { [{props: {id: string} }] } compArr
+ * @returns {boolean}
+ * @private
+ */
+const _checkUniqueIds = function(compArr) {
+  let keys = _getUniqueKeySet(compArr);
+  return keys.size === compArr.length;
 };
 
 const styles = StyleSheet.create({
@@ -136,21 +170,20 @@ const styles = StyleSheet.create({
 
 class SwipeSelector extends React.Component {
   //TODO: Flicking
-  //TODO: Hidden Arm
   //TODO: Dynamically resize view to fit components?
 
   // Static class props
 
   /**
    * Enumeration used to determine the scroll directions to be used for a SwipeSelector
-   * @type {{}}
+   * @type {{ HORIZONTAL: Symbol, VERTICAL: Symbol, ADAPTIVE: Symbol, CUSTOM: Symbol}}
    */
   static scrollDirections = _scrollDirections;
 
   /**
    * Enumeration used to determine the particular type of scaling for animation
    * Scaling may be applied to size scaling, location, or opacity.
-   * @type {{}}
+   * @type {{ LINEAR: Symbol, LOGARITHMIC: Symbol, SQRT: Symbol }}
    */
   static scaling = _scaling;
 
@@ -308,11 +341,20 @@ class SwipeSelector extends React.Component {
 
   }
 
+  /**
+   * The currently selected index of the swipe selector
+   * @returns {number}
+   */
   get currentIndex () {
     return this.state.currentIndex;
   }
 
+  /**
+   * Sets the currently selected index of the swipe selector
+   * @param {number} val
+   */
   set currentIndex (val) {
+    // TODO: Transition to the new index after setting it
     this.setState({currentIndex: val}, () => this.props.onChange({index: val, component: this.state.children[val].component}));
     return val
   }
@@ -399,7 +441,20 @@ class SwipeSelector extends React.Component {
     this.transitionTo(viewComponent.index, null, 250);
   }
 
-  expandItems(cb) {
+  /**
+   * This callback is run after the requested animation is complete.
+   * The first parameter is the array of children
+   *
+   * @callback animationCallback
+   * @param {[EncasedView]} children Gives the array of children in their current states
+   */
+
+  /**
+   * Returns all items to their current position and then runs the provided callback
+   * @param {animationCallback} [cb]
+   * @param {number} [duration=500]
+   */
+  expandItems(cb, duration = 500) {
     // If we're not in a contracted state, then don't do anything
     if (this.state.children.some( child => child.currentIndex !== 0 && child.currentIndex !== this.state.children.length)) return;
 
@@ -410,7 +465,7 @@ class SwipeSelector extends React.Component {
 
       child.currentIndex = startIndex;
       child.shownIndex = startIndex;
-      animations.push(child.transitionAnimation(finalIndex));
+      animations.push(child.transitionAnimation(finalIndex, duration));
     });
     Animated.parallel(animations).start( ({finished: finished}) => {
 
@@ -427,11 +482,17 @@ class SwipeSelector extends React.Component {
 
   }
 
-  contractItems(cb) {
+  /**
+   * Returns all items to the centre point and then runs the provided callback
+   * @param {animationCallback} [cb]
+   * @param {number} [duration=500]
+   */
+  contractItems(cb, duration = 500) {
     let animations = [];
     this.state.children.forEach( (child) => {
+      // Determines whether child should approach from the left or from the right
       let finalIndex = Math.round(child.shownIndex/this.state.children.length) * (this.state.children.length);
-      animations.push(child.transitionAnimation(finalIndex));
+      animations.push(child.transitionAnimation(finalIndex, duration));
     });
     Animated.parallel(animations).start( ({finished: finished}) => {
 
@@ -447,21 +508,31 @@ class SwipeSelector extends React.Component {
 
   }
 
+  /**
+   * Restores all items to scaling of 1 and then runs the provided callback
+   * @param {animationCallback} [cb]
+   * @param {number} [duration=500]
+   */
   restoreItems(cb, duration = 500) {
     Animated.parallel(this.state.children.map( child => child.restore(duration) )
     ).start( ({finished: finished}) => {
       if (!finished) return;
 
-      if (cb) cb();
+      if (cb) cb(this.state.children);
     });
   }
 
+  /**
+   * Shrinks all items to scaling of 0 and then runs the provided callback
+   * @param {animationCallback} [cb]
+   * @param {number} [duration=500]
+   */
   shrinkItems(cb, duration = 500) {
     Animated.parallel(this.state.children.map( child => child.shrink(duration) )
     ).start( ({finished: finished}) => {
       if (!finished) return;
 
-      if (cb) cb();
+      if (cb) cb(this.state.children);
     });
   }
 
@@ -469,7 +540,7 @@ class SwipeSelector extends React.Component {
    * Transitions to a targeted index over a given duration
    * Will do no more than half a rotation to reach its destination
    * @param {number} finalIndex
-   * @param {function} [cb] Callback function executed at the end of the transition (if successful)
+   * @param {animationCallback} [cb] Callback function executed at the end of the transition (if successful)
    * @param {number} [duration=1000]
    */
   transitionTo (finalIndex, cb, duration = 1000) {
@@ -500,7 +571,7 @@ class SwipeSelector extends React.Component {
   /**
    * Rotates a certain distance over a given duration
    * @param {number} distance The amount of steps to take, sign indicates direction (positive - right, negative - left)
-   * @param {function} [cb] Callback function executed at the end of the transition (if successful)
+   * @param {animationCallback} [cb] Callback function executed at the end of the transition (if successful)
    * @param {number} [duration=1000]
    */
   transition (distance, cb, duration = 1000) {
@@ -519,7 +590,7 @@ class SwipeSelector extends React.Component {
             .start( ({finished: finished}) => {
               if (!finished) return;
 
-              if (cb) cb();
+              if (cb) cb(this.state.children);
             });
     }
     else {
@@ -575,7 +646,8 @@ class SwipeSelector extends React.Component {
           this.state.children[currentSelectedIndex].shownIndex = this.state.totalCount;
 
           this.currentIndex = transitionalIndexes[currentAnimation];
-          if (cb) cb();
+
+          if (cb) cb(this.state.children);
         }
         else {
           currentAnimation++;
@@ -623,8 +695,22 @@ class SwipeSelector extends React.Component {
 
   }
 
+  /**
+   * Collate the children to ensure they render in proper order
+   * @param {[EncasedView]} items The array of children to order
+   * @param {number} currentIndex The current frontmost index
+   * @returns {[EncasedView]}
+   * @private
+   */
   _collateItems(items, currentIndex = 0) {
     //collate items and prepare for rendering
+    // TODO: Use z-index for collation
+    /*
+    * z-index might be substituted for this, however it is still (as of yet) undocumented
+    *   and the method to calculate the proper z-index for each item would be the same as
+    *   the currently implemented method. What would be gained would be a some array
+    *   allocations saved and, more importantly, no re-rendering on scrolling
+    * */
 
     let itemsList = circularize(items, currentIndex, true);
 

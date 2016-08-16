@@ -2,7 +2,30 @@
 
 import {range} from './helpers';
 
-//TODO: Make this more robust
+/**
+ * Encapsulates an interpolation map, with the input range and the calculated output range
+ * The output range is stored in a valueLabel set when the map is calculated.
+ * @name InterpolationMap
+ * @type { {inputRange: [number], [valueLabel]: {inputRange: [number], outputRange: [number] } } }
+ */
+
+/**
+ * Encapsulates a 2D interpolation map, with the input range and the calculated output range.
+ * @name Interpolation2DMap
+ * @type { {inputRange: [number], x: {inputRange: [number], outputRange: [number] }, y: {inputRange: [number], outputRange: [number] } } }
+ */
+
+
+/**
+ * Calculates an interpolation map. The valueLabel parameter determines what
+ *  property to store the resulting outputRange
+ * @param {Bounds} bounds
+ * @param {number} rightCount Item count on the right
+ * @param {number} leftCount Item count on the left
+ * @param {number} hiddenCount Item count on hidden arm
+ * @param {string} [valueLabel="x"] The property label to access data in bounds and store it in the resulting object
+ * @returns {InterpolationMap}
+ */
 function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount = 0, valueLabel = 'x') {
   let inputRange = []; // Bound for convenience and as a sanity check
   let outputRange = { [valueLabel] : []};
@@ -130,6 +153,14 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
   };
 }
 
+/**
+ * Calculates a 2D interpolation map.
+ * @param {Bounds} bounds
+ * @param {number} rightCount Item count on the right
+ * @param {number} leftCount Item count on the left
+ * @param {number} hiddenCount Item count on hidden arm
+ * @returns {Interpolation2DMap}
+ */
 function calculate2DInterpolationMap(bounds, rightCount, leftCount, hiddenCount) {
 
   let xInterpolation = calculateInterpolationMap(...arguments, 'x');
@@ -142,6 +173,15 @@ function calculate2DInterpolationMap(bounds, rightCount, leftCount, hiddenCount)
   };
 }
 
+/**
+ * Windows the given output range. If the input value is within one of the provided ranges
+ *  the output range will be unchanged, otherwise it is set to the default value.
+ * @param {[number]} inputRange
+ * @param {[number]} outputRange
+ * @param {{default: number, range: [{start: number, end: number}] }} valuedInputs
+ * @param {string} valueLabel
+ * @returns { InterpolationMap }
+ */
 function interpolationWindow (inputRange, outputRange, valuedInputs, valueLabel = 'x') {
   // Changes to default for everything that is not in the closed interval of valuedInputs
   // ValuedInputs = { default: Number, range: [{start: Number , end: Number }]}

@@ -13,6 +13,31 @@ const styles = StyleSheet.create({
   }
 });
 
+/**
+ * @name Bounds
+ * @type {
+ *        {
+ *          center: { x: number, y: number }
+ *          left  : { x: number, y: number, padPoints: number, interpolate: function, interpolateDepth: number, vanishingGap: number}
+ *          right : { x: number, y: number, padPoints: number, interpolate: function, interpolateDepth: number, vanishingGap: number}
+ *          hidden: { interpolate: function, interpolateDepth: number }
+ *        }
+ *       }
+ */
+
+/**
+ * Prepares a Bounds object to be used to create an interpolation map
+ * @param {Vector} centerVal
+ * @param {Vector} leftVal
+ * @param {Vector} rightVal
+ * @param {number} padLeft
+ * @param {number} padRight
+ * @param {function} interpolate
+ * @param {number} interpolateDepth
+ * @param {number} vanishingGap
+ * @returns {Bounds}
+ * @private
+ */
 const _prepBounds = function (centerVal, leftVal, rightVal, padLeft, padRight,
                               interpolate, interpolateDepth, vanishingGap) {
   return {
@@ -104,12 +129,6 @@ class EncasedView {
         // Do nothing
       }
     });
-    this._tapStore = {
-      height: 0,
-      width: 0,
-      pageLocationStart: { x:0, y:0 },
-      locationStart: { x:0, y:0 }
-    };
 
     this._globalPositionAdjustment = centrePoint;
     this._mainPositionAdjustment = new Animated.ValueXY({x: 0, y:0});
@@ -130,6 +149,12 @@ class EncasedView {
     this._easing = easing;
   }
 
+  /**
+   * Returns the component wrapped in a view with all animated values bounds using
+   *  this instances data
+   * @returns {XML}
+   * @private
+   */
   _generateViewComponent () {
     // interpolated properties
     let transX;
@@ -174,8 +199,6 @@ class EncasedView {
         onLayout={ ({nativeEvent: {layout : {width: width, height: height}}}) => {
           this._mainPositionAdjustment.x.setValue(-(width/2));
           this._mainPositionAdjustment.y.setValue(-(height/2));
-          this._tapStore.height = height;
-          this._tapStore.width = width;
         }}
         style={[ styles.itemViewStyle,
           {
@@ -223,27 +246,61 @@ class EncasedView {
     return viewComponent;
   }
 
+  /**
+   * The animated value representing the state of the location animation
+   * @returns {Animated.ValueXY}
+   */
   get locationState () {
     return this._location;
   }
+
+  /**
+   * The animated value representing the state of the scale animation
+   * @returns {Animated.ValueXY}
+   */
   get scaleState () {
-    this._scale;
-  }
-  get opacityState () {
-    this._opacity;
+    return this._scale;
   }
 
+  /**
+   * The animated value representing the state of the opacity animation
+   * @returns {Animated.Value}
+   */
+  get opacityState () {
+    return this._opacity;
+  }
+
+  /**
+   * The current position of the component in the circle. Should always be an integer.
+   * @returns {number}
+   */
   get currentIndex () {
     return this._currentIndex;
   }
+
+  /**
+   * The current position of the component in the circle. Should always be an integer.
+   * @param {number} val
+   */
   set currentIndex (val) {
+    if (val%1 !== 0)
+      throw new Error(`Expected integer argument, received ${val} instead`);
     this._currentIndex = val;
     return val;
   }
 
+  /**
+   * The position at which the component is currently animated. May not be correct during the middle of an animation.
+   * @returns {number}
+   */
   get shownIndex () {
     return this._shownIndex;
   }
+
+  /**
+   * The position at which the component is currently animated. May not be correct during the middle of an animation.
+   * @param {number} val
+   */
   set shownIndex (val) {
     this._shownIndex = val;
     this._location.setValue({x:val, y: val});
@@ -252,33 +309,71 @@ class EncasedView {
     return val;
   }
 
+  /**
+   * The index of the component in the original array
+   * @returns {number}
+   */
   get index () {
     return this._index;
   }
+
+  /**
+   * The key of the enclosing view
+   * @returns {string}
+   */
   get key() {
     return this._key;
   }
 
+  /**
+   * The child component contained inside the view
+   * @returns {XML}
+   */
   get component () {
     return this._component;
   }
+
+  /**
+   * The child component contained inside the view
+   * @param {XML} val
+   */
   set component (val) {
     this._component = val;
     this._viewComponent = this._generateViewComponent();
     return val;
   }
+
+  /**
+   * The descriptor attached to the view
+   * @returns {string}
+   */
   get descriptor () {
     return this._descriptor;
   }
+
+  /**
+   * The descriptor attached to the view
+   * @param {string} val
+   */
   set descriptor (val) {
     this._descriptor = val;
     this._viewComponent = this._generateViewComponent();
     return val;
   }
+
+  /**
+   * The enclosing view, with the component wrapped inside
+   * @returns {XML}
+   */
   get viewComponent () {
     return this._viewComponent;
   }
 
+  /**
+   * Returns an animation to shrink the view to scaling of 0
+   * @param {number} [duration=500]
+   * @returns {CompositeAnimation}
+   */
   shrink (duration = 500) {
     return Animated.timing(
       this._scaleMultiplier,
@@ -290,6 +385,11 @@ class EncasedView {
     )
   }
 
+  /**
+   * Returns an animation to restore the view to scaling of 1
+   * @param {number} [duration=500]
+   * @returns {CompositeAnimation}
+   */
   restore (duration = 500) {
     return Animated.timing(
       this._scaleMultiplier,
@@ -301,6 +401,11 @@ class EncasedView {
     )
   }
 
+  /**
+   * Returns an animation to move the view from its current location to the indicated location
+   * @param {number} moveTo The position to move to
+   * @param {number} [duration=500]
+   */
   transitionAnimation (moveTo, duration = 500) {
     let animations = [];
 
@@ -321,7 +426,16 @@ class EncasedView {
 
 }
 
-export default function encaseViews (state, children, descriptors, centrePoint = {x:0, y:0}, onTap) {
+/**
+ * Takes a given state object, children, descriptors, centre
+ * @param {Object} state
+ * @param {[XML]} children
+ * @param {[string]} [descriptors]
+ * @param {Vector} [centrePoint={x:0, y:0}]
+ * @param {function} [onTap]
+ * @returns {[EncasedView]}
+ */
+function encaseViews (state, children, descriptors, centrePoint = {x:0, y:0}, onTap) {
 
   if (!Array.isArray(children)) children = [children];
 
@@ -402,4 +516,6 @@ export default function encaseViews (state, children, descriptors, centrePoint =
   });
 
   return encasedItems;
-};
+}
+
+export { encaseViews as default, EncasedView };
