@@ -220,6 +220,7 @@ class EncasedView {
           style={[
             {
               opacity: descOpa,
+              backgroundColor: "rgba(0,0,0,0)"
             }
           ]}
         >

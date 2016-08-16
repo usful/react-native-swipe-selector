@@ -387,6 +387,7 @@ class SwipeSelector extends React.Component {
         this.setState(this.nextState, () => {
           this.restoreItems();
           this.expandItems();
+          this.nextState = {};
           this.currentIndex = this.currentIndex;
         })
 
@@ -411,7 +412,6 @@ class SwipeSelector extends React.Component {
           return comp;
         });
 
-        this.nextState = {};
         this.setState({children: newComponents});
       }
       else {
@@ -423,6 +423,7 @@ class SwipeSelector extends React.Component {
           this.setState(this.nextState, () => {
             this.restoreItems();
             this.expandItems();
+            this.nextState = {};
             this.currentIndex = this.currentIndex;
           })
         });
