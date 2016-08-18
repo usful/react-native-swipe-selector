@@ -502,6 +502,23 @@ function encaseViews (state, children, descriptors, centrePoint = {x:0, y:0}, on
     'opacity'
   );
 
+  // This is here to deal with an Android specific bug associated with setting the scale/height of a view to 0
+  // https://github.com/facebook/react-native/issues/7431
+  // TODO: Remove this once scale of 0 works on Android
+  interpolationOpacityMap = interpolationWindow(
+    interpolationOpacityMap.opacity.inputRange,
+    interpolationOpacityMap.opacity.outputRange,
+    {
+      default: 0,
+      range: [
+        { start: 0, end: interpolationOpacityMap.opacity.inputRange[state.rightCount] },
+        { start: interpolationOpacityMap.opacity.inputRange[interpolationOpacityMap.opacity.inputRange.length - state.leftCount], end: children.length }
+      ]
+    },
+    'opacity'
+  );
+
+
   let interpolationMaps = {
     location: interpolationLocationMap,
     scale: interpolationScaleMap,

@@ -5,6 +5,7 @@ import { StyleSheet, Text, View, Animated, Easing, PanResponder, TouchableOpacit
 import { bound, range, circularize, deepCompare } from './helpers';
 import { scaleLinear, scaleLogarithmic, scaleSqrt } from './scalers'
 import encaseViews, { EncasedView } from './encaseViews';
+import "babel-polyfill";
 
 // CAUTION: Vector functions mutate the original vector
 import Vector from 'victor';
