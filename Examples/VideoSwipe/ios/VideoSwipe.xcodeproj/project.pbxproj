@@ -23,6 +23,10 @@
 		140ED2AC1D01E1AD002B40FF /* libReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 146834041AC3E56700842450 /* libReact.a */; };
 		146834051AC3E58100842450 /* libReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 146834041AC3E56700842450 /* libReact.a */; };
 		15E83F2A3E544B488786BFB1 /* libRCTVideo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AE6C429A9974BCC8D93249E /* libRCTVideo.a */; };
+		5A8F15631D65127F00EEE4D0 /* destinationmoon.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 5A8F15601D65127F00EEE4D0 /* destinationmoon.mp4 */; };
+		5A8F15641D65127F00EEE4D0 /* destroyallplanets.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 5A8F15611D65127F00EEE4D0 /* destroyallplanets.mp4 */; };
+		5A8F15651D65127F00EEE4D0 /* giantleeches.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 5A8F15621D65127F00EEE4D0 /* giantleeches.mp4 */; };
+		5A8F15671D65F2BA00EEE4D0 /* moonbeast.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 5A8F15661D65F2BA00EEE4D0 /* moonbeast.mp4 */; };
 		832341BD1AAA6AB300B99B32 /* libRCTText.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 832341B51AAA6A8300B99B32 /* libRCTText.a */; };
 /* End PBXBuildFile section */
 
@@ -133,6 +137,10 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = VideoSwipe/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = VideoSwipe/main.m; sourceTree = "<group>"; };
 		146833FF1AC3E56700842450 /* React.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = React.xcodeproj; path = "../node_modules/react-native/React/React.xcodeproj"; sourceTree = "<group>"; };
+		5A8F15601D65127F00EEE4D0 /* destinationmoon.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; name = destinationmoon.mp4; path = ../destinationmoon.mp4; sourceTree = "<group>"; };
+		5A8F15611D65127F00EEE4D0 /* destroyallplanets.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; name = destroyallplanets.mp4; path = ../destroyallplanets.mp4; sourceTree = "<group>"; };
+		5A8F15621D65127F00EEE4D0 /* giantleeches.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; name = giantleeches.mp4; path = ../giantleeches.mp4; sourceTree = "<group>"; };
+		5A8F15661D65F2BA00EEE4D0 /* moonbeast.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; name = moonbeast.mp4; path = ../moonbeast.mp4; sourceTree = "<group>"; };
 		78C398B01ACF4ADC00677621 /* RCTLinking.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTLinking.xcodeproj; path = "../node_modules/react-native/Libraries/LinkingIOS/RCTLinking.xcodeproj"; sourceTree = "<group>"; };
 		7AE6C429A9974BCC8D93249E /* libRCTVideo.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRCTVideo.a; sourceTree = "<group>"; };
 		832341B01AAA6A8300B99B32 /* RCTText.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTText.xcodeproj; path = "../node_modules/react-native/Libraries/Text/RCTText.xcodeproj"; sourceTree = "<group>"; };
@@ -309,6 +317,10 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				5A8F15661D65F2BA00EEE4D0 /* moonbeast.mp4 */,
+				5A8F15601D65127F00EEE4D0 /* destinationmoon.mp4 */,
+				5A8F15611D65127F00EEE4D0 /* destroyallplanets.mp4 */,
+				5A8F15621D65127F00EEE4D0 /* giantleeches.mp4 */,
 				13B07FAE1A68108700A75B9A /* VideoSwipe */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				00E356EF1AD99517003FC87E /* VideoSwipeTests */,
@@ -538,6 +550,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A8F15671D65F2BA00EEE4D0 /* moonbeast.mp4 in Resources */,
+				5A8F15631D65127F00EEE4D0 /* destinationmoon.mp4 in Resources */,
+				5A8F15641D65127F00EEE4D0 /* destroyallplanets.mp4 in Resources */,
+				5A8F15651D65127F00EEE4D0 /* giantleeches.mp4 in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				13B07FBD1A68108700A75B9A /* LaunchScreen.xib in Resources */,
 			);
@@ -649,7 +665,7 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/../node_modules/react-native/React/**",
-					"$(SRCROOT)/../node_modules/react-native-video",
+					"$(SRCROOT)/../node_modules/react-native-video/**",
 				);
 				INFOPLIST_FILE = VideoSwipe/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -670,7 +686,7 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/../node_modules/react-native/React/**",
-					"$(SRCROOT)/../node_modules/react-native-video",
+					"$(SRCROOT)/../node_modules/react-native-video/**",
 				);
 				INFOPLIST_FILE = VideoSwipe/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
