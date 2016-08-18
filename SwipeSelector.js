@@ -279,7 +279,11 @@ class SwipeSelector extends React.Component {
       },
 
       onPanResponderGrant: (e, gestureState) => {
-        // Do nothing, setup code is in onPanResponderStart
+        this.state.children.forEach( (child) => {
+          let finalIndex =_indexToPosition(this.currentIndex, child.index, this.state.children.length);
+          child.currentIndex = finalIndex;
+          child.shownIndex = finalIndex;
+        });
       },
 
       onPanResponderReject: (e, gestureState) => {
@@ -288,11 +292,7 @@ class SwipeSelector extends React.Component {
 
       onPanResponderStart: (e, gestureState) => {
         // TODO: set up all resources required
-        this.state.children.forEach( (child) => {
-          let finalIndex =_indexToPosition(this.currentIndex, child.index, this.state.children.length);
-          child.currentIndex = finalIndex;
-          child.shownIndex = finalIndex;
-        });
+        // All component specific setup is in PanResponderGrant
       },
 
       onPanResponderEnd: (e, gestureState) => {
