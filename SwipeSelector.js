@@ -280,7 +280,7 @@ class SwipeSelector extends React.Component {
       },
 
       onMoveShouldSetPanResponder: (e, gestureState) => {
-        //TODO: Negative hitslop, minimum distance travelled before attempting to grab
+        // TODO: Negative hitslop, minimum distance travelled before attempting to grab
         return true; // Should not grab if interacting with something else
       },
 
@@ -297,12 +297,10 @@ class SwipeSelector extends React.Component {
       },
 
       onPanResponderStart: (e, gestureState) => {
-        // TODO: set up all resources required
         // All component specific setup is in PanResponderGrant
       },
 
       onPanResponderEnd: (e, gestureState) => {
-        // TODO: release all resources used
         this.transitionTo(this.currentIndex, ()=>{
           this.state.children.forEach( (child) => {
           let finalIndex =_indexToPosition(this.currentIndex, child.index, this.state.children.length);
