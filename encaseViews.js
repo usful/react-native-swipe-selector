@@ -512,7 +512,7 @@ function encaseViews (state, children, descriptors, centrePoint = {x:0, y:0}, on
       default: 0,
       range: [
         { start: 0, end: interpolationOpacityMap.opacity.inputRange[state.rightCount] },
-        { start: interpolationOpacityMap.opacity.inputRange[interpolationOpacityMap.opacity.inputRange.length - state.leftCount], end: children.length }
+        { start: interpolationOpacityMap.opacity.inputRange[interpolationOpacityMap.opacity.inputRange.length - state.leftCount - 1], end: children.length }
       ]
     },
     'opacity'

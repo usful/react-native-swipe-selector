@@ -558,6 +558,10 @@ class SwipeSelector extends React.Component {
    */
   transitionTo (finalIndex, cb, duration = 1000) {
 
+    // If there's no children, can't transition anything, shouldn't do anything
+    if (this.state.totalCount === 0)
+      return;
+
     // naive check for integer argument
     if (finalIndex%1 !== 0)
       throw new Error(`Integer argument expected, received ${finalIndex} instead`);
