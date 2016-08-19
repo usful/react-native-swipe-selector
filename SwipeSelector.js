@@ -46,12 +46,17 @@ const _resolveScrollDirections = function(scrollDirection,
     case _scrollDirections.VERTICAL:
       return Vector.fromObject({x: 0, y: -1});
     case _scrollDirections.ADAPTIVE:
-      // This gives a vector that is perpindicular to the vector directly between the travelling paths
+      // This gives a vector that is perpendicular to the vector directly between the travelling paths
       let left = Vector.fromObject(fixPoints.leftPoint).norm();
       let right = Vector.fromObject(fixPoints.rightPoint).norm();
-      // TODO: instead of turning 90 degrees CW, it should turn 90 degrees towards the right point
-      let axis = left.clone().add(right).rotateByDeg(-90).norm();
-      return axis;
+
+      let scrollAxis = left.clone().add(right).rotateByDeg(-90).norm();
+      // Checks the dot product against the right vector to see if it needs to be flipped
+      // If the right is the opposite direction to the axis, it needs to be flipped
+      if ( right.dot(scrollAxis) < 0 )
+        scrollAxis.invert();
+
+      return scrollAxis;
     case _scrollDirections.CUSTOM:
       return Vector.fromObject(customVector).norm();
     default:
