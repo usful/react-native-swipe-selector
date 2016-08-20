@@ -244,16 +244,16 @@ class SwipeSelector extends React.Component {
 
     state.unitVector = _resolveScrollDirections(state.scrollDirection);
 
+    if (createViewComponents) {
+      state.children = encaseViews(state, children, descriptors, centrePoint, onTap);
+    }
+
     if (props.simpleScroll) {
       state.scrollDistance = props.simpleScrollDistance
     }
     else {
       // TODO: This should be the distance between the center and the adjacent (right) index
       state.scrollDistance = props.simpleScrollDistance;
-    }
-
-    if (createViewComponents) {
-      state.children = encaseViews(state, children, descriptors, centrePoint, onTap);
     }
 
     return state;

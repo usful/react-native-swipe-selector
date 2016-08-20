@@ -1,6 +1,7 @@
 "use strict";
 
 import {range} from './helpers';
+import {inverseFunc} from './scalers'
 
 /**
  * Encapsulates an interpolation map, with the input range and the calculated output range
@@ -29,8 +30,10 @@ import {range} from './helpers';
 function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount = 0, valueLabel = 'x') {
   let inputRange = []; // Bound for convenience and as a sanity check
   let outputRange = { [valueLabel] : []};
+  let inverse = () => {};
 
   let rightArm, hiddenArm, leftArm;
+  let rightOutputArm, hiddenOutputArm, leftOutputArm;
   // Calculate the stopping points and vanishing points (w/ padding) with which to sample the functions
   {
     let nextIndex = 0;
@@ -120,23 +123,23 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
     let nextIndex = 0;
 
     let rightMaxIndex = rightCount;
-    let rightArm = Array.from(range(nextIndex, rightMaxIndex + 1));
+    rightOutputArm = Array.from(range(nextIndex, rightMaxIndex + 1));
     let rightVanishingIndex = rightMaxIndex  + bounds.right.vanishingGap;
-    rightArm.push(rightVanishingIndex);
+    rightOutputArm.push(rightVanishingIndex);
     nextIndex = rightMaxIndex + 1;
 
-    let hiddenArm = Array.from(range(nextIndex, nextIndex + hiddenCount));
+    hiddenOutputArm = Array.from(range(nextIndex, nextIndex + hiddenCount));
     nextIndex = nextIndex + hiddenCount;
 
     let leftMaxIndex = rightMaxIndex + leftCount;
-    let leftArm = Array.from(range(nextIndex, leftMaxIndex + 1));
+    leftOutputArm = Array.from(range(nextIndex, leftMaxIndex + 1));
     let leftVanishingIndex = nextIndex - bounds.left.vanishingGap;
-    leftArm.unshift(leftVanishingIndex);
+    leftOutputArm.unshift(leftVanishingIndex);
     nextIndex = leftMaxIndex + 1;
 
-    leftArm.push(nextIndex); // for final transition back to 0th state
+    leftOutputArm.push(nextIndex); // for final transition back to 0th state
 
-    inputRange = [].concat(rightArm, hiddenArm, leftArm);
+    inputRange = [].concat(rightOutputArm, hiddenOutputArm, leftOutputArm);
   }
 
   let removePadding = (outputArr) => {
@@ -147,9 +150,23 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
   };
   removePadding(outputRange[valueLabel]);
 
+  // Recalculate rightArm and leftArm to be the actual values in the input range
+  rightArm = inputRange.slice(0, rightCount + 2);
+  rightOutputArm = outputRange[valueLabel].slice(0, rightCount + 2);
+  inputRange.reverse();
+  leftArm = inputRange.slice(0, leftCount + 2);
+  leftOutputArm = outputRange[valueLabel].slice(0, leftCount + 2);
+  inputRange.reverse();
+
+  inverse = inverseFunc(rightArm, rightOutputArm);
+
   return {
     inputRange: inputRange,
-    [valueLabel]: {inputRange: inputRange, outputRange: outputRange[valueLabel]}
+    [valueLabel]: {
+      inputRange: inputRange,
+      outputRange: outputRange[valueLabel],
+      inverse: inverse
+    }
   };
 }
 
@@ -168,8 +185,8 @@ function calculate2DInterpolationMap(bounds, rightCount, leftCount, hiddenCount)
   let yInterpolation = calculateInterpolationMap(...arguments, 'y');
   return {
     inputRange: xInterpolation.inputRange,
-    x: {inputRange: xInterpolation.inputRange, outputRange: xInterpolation.x.outputRange},
-    y: {inputRange: xInterpolation.inputRange, outputRange: yInterpolation.y.outputRange}
+    x: { ... xInterpolation.x },
+    y: { ... yInterpolation.y }
   };
 }
 
