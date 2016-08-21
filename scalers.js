@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Returns a linear scaling function, effectively acting as a linear interpolation
  * @param inputRange {{start: number, end: number }}
@@ -123,16 +124,16 @@ function inverseFunc(inputRange, outputRange) {
 
   if (inputRange.length < 2 || outputRange.length < 2)
     throw new Error('Inverse estimation requires at least 2 data points');
-
+  let inputCache = inputRange.slice();
   let outputCache = outputRange.slice();
 
   // Generate the cache
-  inputInterpolations = inputRange.map( (e, ix, arr) => {
+  let inputInterpolations = inputCache.map( (e, ix, arr) => {
 
     if (ix === arr.length - 1)
-      return scaleLinear({start: outputRange[ix-1], end:e}, {start: arr[ix-1], end: e});
+      return scaleLinear({start: outputCache[ix-1], end:outputCache[ix]}, {start: arr[ix-1], end: e});
     else
-      return scaleLinear({start: outputRange[ix], end: outputRange[ix+1]}, {start: e, end:arr[ix+1]});
+      return scaleLinear({start: outputCache[ix], end: outputCache[ix+1]}, {start: e, end:arr[ix+1]});
 
   } );
 
@@ -140,10 +141,13 @@ function inverseFunc(inputRange, outputRange) {
   inputInterpolations[-1] = inputInterpolations[0];
 
   // Whether the output is increasing or decreasing
-  let increasing = outputRange[0] < outputRange[outputRange.length -1];
+  let increasing = outputCache[0] < outputCache[outputRange.length -1];
 
   if (!increasing) {
+    inputInterpolations.unshift(inputInterpolations[-1]);
     inputInterpolations.reverse();
+    inputInterpolations[-1] = inputInterpolations.shift();
+    inputCache.reverse();
     outputCache.reverse();
   }
 
@@ -157,6 +161,9 @@ function inverseFunc(inputRange, outputRange) {
 
     return val;
   };
+
+  inverse.inputCache = inputCache;
+  inverse.outputCache = outputCache;
 
   return inverse;
 }

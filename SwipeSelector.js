@@ -120,7 +120,7 @@ const _defaultProps = {
   hide: false,
   show: 3,
   easing: Easing.ease,
-  simpleScroll: true, // Simple scroll just measures the distance travelled
+  simpleScroll: false, // Simple scroll just measures the distance travelled
   simpleScrollDistance: 100,
   scrollDirection: _scrollDirections.ADAPTIVE,
   unitVector: null
@@ -228,9 +228,11 @@ class SwipeSelector extends React.Component {
       hideCount: hideCount,
       totalCount: children.length,
       unitVector: null, // resolved to a value below
+      leftVector: null,
+      rightVector: null,
       scrollDistance: 0, // resolved to a value below
       easing: props.easing,
-      scrollDirection: props.scrollDirection,
+      scrollDirection: null, // resolved to a value below
       scalingOptions: {
         ... SwipeSelector.defaultScalingOptions,
         ... props.scalingOptions
@@ -242,18 +244,20 @@ class SwipeSelector extends React.Component {
     state.scalingOptions.locationScaling = _resolveScaling(state.scalingOptions.locationScaling);
     state.scalingOptions.opacityScaling = _resolveScaling(state.scalingOptions.opacityScaling);
 
-    state.unitVector = _resolveScrollDirections(state.scrollDirection);
+    state.leftVector = Vector.fromObject(props.leftPoint).norm();
+    state.rightVector = Vector.fromObject(props.rightPoint).norm();
+    state.unitVector = _resolveScrollDirections(props.scrollDirection, props.leftPoint, props.rightPoint, props.unitVector);
 
     if (createViewComponents) {
       state.children = encaseViews(state, children, descriptors, centrePoint, onTap);
     }
 
+    state.simpleScroll = props.simpleScroll;
     if (props.simpleScroll) {
       state.scrollDistance = props.simpleScrollDistance
     }
     else {
-      // TODO: This should be the distance between the center and the adjacent (right) index
-      state.scrollDistance = props.simpleScrollDistance;
+      state.scrollDistance = null;
     }
 
     return state;
@@ -314,10 +318,36 @@ class SwipeSelector extends React.Component {
         // TODO: Do the flicking thing
         // Gesture displacement vector
         let displacement = Vector.fromObject({x: gestureState.dx, y: gestureState.dy});
-        // Displacement vector projection to find distance travelled along scrolling axis
-        let projection = displacement.clone().dot(this.state.unitVector);
+
         // How many indices have been traversed based on the given projection
-        let increment = projection/this.state.scrollDistance;
+        let increment;
+
+        if (this.state.simpleScroll) {
+          // Displacement vector projection to find distance travelled along scrolling axis
+          let projection = displacement.clone().dot(this.state.unitVector);
+          increment = projection / this.state.scrollDistance;
+        }
+        else {
+          let element = this.state.children.find( e => e.currentIndex === 0 );
+          // take the projection against both sides and see which one creates the highest magnitude
+          let leftProjection = displacement.clone().dot(this.state.leftVector);
+          let rightProjection = displacement.clone().dot(this.state.rightVector);
+          let projection;
+          let offset;
+
+          if (rightProjection > leftProjection) {
+            projection = Vector.fromObject(this.state.rightVector)
+                               .norm().multiply({x: rightProjection, y: rightProjection});
+            offset = element.rightLocationOffset(projection);
+          }
+          else {
+            projection = Vector.fromObject(this.state.leftVector)
+                               .norm().multiply({x: leftProjection, y: leftProjection});
+            offset = element.leftLocationOffset(projection);
+          }
+
+          increment = offset;
+        }
 
         for (let item of this.state.children) {
           let newIndex;
@@ -790,7 +820,10 @@ class SwipeSelector extends React.Component {
         style={[this.props.style, { flex: 1, alignSelf: 'stretch', justifyContent: 'center', alignItems: 'center'}]}
       >
         {items}
-        <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {this.transitionTo(3)} }><Text>DEBUG</Text></TouchableOpacity>
+        <TouchableOpacity style={{backgroundColor: '#333', position:'absolute', top:0, left:0}}  onPress={ () => {
+          let element = this.state.children.find( e => e.currentIndex === 0 );
+          debugger;
+        } }><Text>DEBUG</Text></TouchableOpacity>
       </View>
 
     );

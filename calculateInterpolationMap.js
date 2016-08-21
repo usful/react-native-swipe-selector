@@ -30,7 +30,8 @@ import {inverseFunc} from './scalers'
 function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount = 0, valueLabel = 'x') {
   let inputRange = []; // Bound for convenience and as a sanity check
   let outputRange = { [valueLabel] : []};
-  let inverse = () => {};
+  let inverseLeft = () => {};
+  let inverseRight = () => {};
 
   let rightArm, hiddenArm, leftArm;
   let rightOutputArm, hiddenOutputArm, leftOutputArm;
@@ -154,18 +155,22 @@ function calculateInterpolationMap (bounds, rightCount, leftCount, hiddenCount =
   rightArm = inputRange.slice(0, rightCount + 2);
   rightOutputArm = outputRange[valueLabel].slice(0, rightCount + 2);
   inputRange.reverse();
+  outputRange[valueLabel].reverse();
   leftArm = inputRange.slice(0, leftCount + 2);
   leftOutputArm = outputRange[valueLabel].slice(0, leftCount + 2);
   inputRange.reverse();
+  outputRange[valueLabel].reverse();
 
-  inverse = inverseFunc(rightArm, rightOutputArm);
+  inverseRight = inverseFunc(rightArm, rightOutputArm);
+  inverseLeft = inverseFunc(leftArm, leftOutputArm);
 
   return {
     inputRange: inputRange,
     [valueLabel]: {
       inputRange: inputRange,
       outputRange: outputRange[valueLabel],
-      inverse: inverse
+      inverseRight: inverseRight,
+      inverseLeft: inverseLeft
     }
   };
 }

@@ -425,6 +425,20 @@ class EncasedView {
     return Animated.parallel(animations);
   }
 
+  leftLocationOffset({x: x, y: y}) {
+    // There will be some minor arithmetic error, average the values
+    let inverseX = this._locationMap.x.inverseLeft(x);
+    let inverseY = this._locationMap.y.inverseLeft(y);
+    return (inverseX+inverseY)/2;
+  }
+
+  rightLocationOffset({x: x, y: y}) {
+    // There will be some minor arithmetic error, average the values
+    let inverseX = this._locationMap.x.inverseRight(x);
+    let inverseY = this._locationMap.y.inverseRight(y);
+    return (inverseX+inverseY)/2;
+  }
+
 }
 
 /**
